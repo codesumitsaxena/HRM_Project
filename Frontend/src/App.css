@@ -1,0 +1,10 @@
+.loginRightContainer{
+  
+height: auto;
+width: 100%;
+}
+
+.form-control:focus {
+  box-shadow: none !important;
+  border-color: #ced4da !important;
+}
