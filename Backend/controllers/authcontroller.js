@@ -1,46 +1,49 @@
-const db = require('../config/db');
+const db = require('../config/db'); 
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
 exports.signup = (req, res) => {
-  const { user_id, password } = req.body;
-  if (!user_id || !password)
-    return res.status(400).json({ message: "User ID and password are required." });
+  const { full_name, email, password } = req.body;
+  if (!full_name || !email || !password)
+    return res.status(400).json({ message: "All fields required" });
 
   const hashedPassword = bcrypt.hashSync(password, 8);
-  const sql = "INSERT INTO users (user_id, password) VALUES (?, ?)";
-
-  db.query(sql, [user_id, hashedPassword], (err) => {
-    if (err) {
-      if (err.code === 'ER_DUP_ENTRY') {
-        return res.status(409).json({ message: "User already exists." });
+  db.query("INSERT INTO users (full_name, email, password) VALUES (?, ?, ?)",
+    [full_name, email, hashedPassword],
+    (err) => {
+      if (err) {
+        if (err.code === 'ER_DUP_ENTRY') {
+          return res.status(409).json({ message: "Email already registered" });
+        }
+        return res.status(500).json({ message: "Database error" });
       }
-      return res.status(500).json({ message: "Signup failed." });
-    }
-    res.status(201).json({ message: "User registered successfully." });
-  });
+      res.status(201).json({ message: "Signup successful" });
+    });
 };
 
 exports.login = (req, res) => {
-  const { user_id, password } = req.body;
-  if (!user_id || !password)
-    return res.status(400).json({ message: "User ID and password are required." });
+  const { email, password } = req.body;
+  if (!email || !password)
+    return res.status(400).json({ message: "Email and password required" });
 
-  const sql = "SELECT * FROM users WHERE user_id = ?";
-  db.query(sql, [user_id], (err, results) => {
+  db.query("SELECT * FROM users WHERE email = ?", [email], (err, results) => {
     if (err || results.length === 0)
-      return res.status(401).json({ message: "Invalid credentials." });
+      return res.status(401).json({ message: "Invalid credentials" });
 
     const user = results[0];
     const isMatch = bcrypt.compareSync(password, user.password);
     if (!isMatch)
-      return res.status(401).json({ message: "Invalid credentials." });
+      return res.status(401).json({ message: "Invalid credentials" });
 
     const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: "1h" });
     res.status(200).json({
       message: "Login successful",
       token,
-      user_id: user.user_id
+      user: {
+        id: user.id,
+        full_name: user.full_name,
+        email: user.email
+      }
     });
   });
 };
