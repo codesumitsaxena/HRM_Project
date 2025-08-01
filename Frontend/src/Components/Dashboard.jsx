@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Container, Row, Col } from 'react-bootstrap';
-import NavbarTop from './NavbarApp';
 import Sidebar from './Sidebar';
 import DashboardCard from './DashboardCard';
 
@@ -12,7 +11,6 @@ const Dashboard = () => {
 
   return (
     <>
-      <NavbarTop toggleSidebar={toggleSidebar} />
       <Sidebar show={showSidebar} handleClose={closeSidebar} />
 
       <Container className="mt-4">
@@ -27,4 +25,3 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
-

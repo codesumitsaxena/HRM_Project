@@ -1,6 +1,10 @@
 import React, { useState } from "react";
 import { Form, Button } from "react-bootstrap";
+import { Link, useNavigate } from 'react-router-dom'; 
 import LoginFormImg from '../assets/LoginPageImg.jpg'
+
+
+
 function Login() {
   const [isSignup, setIsSignup] = useState(false);
 
@@ -8,6 +12,11 @@ function Login() {
     e.preventDefault();
     setIsSignup(!isSignup);
   };
+  const navigate = useNavigate();
+
+const handleClick = () => {
+  navigate('/dashboard');
+};
 
   return (
     <div className="container-fluid vh-100">
@@ -88,9 +97,10 @@ function Login() {
               {!isSignup && (
                 <div className="d-flex justify-content-between align-items-center mb-3">
                   <Form.Check type="checkbox" label="Remember for 30 days" />
-                  <a href="#" className="small text-muted">
-                    Forgot password
-                  </a>
+                  <Link to="/dashboard" className="small text-muted" style={{ textDecoration: "none" }}>
+  Forgot password
+</Link>
+
                 </div>
               )}
 
