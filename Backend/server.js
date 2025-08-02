@@ -19,3 +19,6 @@ app.use('/api/auth', authRoutes);
 app.listen(process.env.PORT, () => {
   console.log(`🚀 Server running on http://localhost:${process.env.PORT}`);
 });
+
+const departmentRoutes = require('./routes/department');
+app.use('/api/departments', departmentRoutes);
