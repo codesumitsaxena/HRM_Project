@@ -2,3 +2,17 @@
   box-shadow: none !important;
   border-color: #ced4da !important;
 }
+ /* nav */
+.dropdown-basic{
+   
+}
+.searchTopnav{
+  width: 100%;
+}
+.righticon{
+  width: 100%;
+  color: rgb(146, 145, 145);
+}
+.logoSearch{
+  width: 100%;
+}

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Container, Row, Col } from 'react-bootstrap';
 import Sidebar from './Sidebar';
 import DashboardCard from './DashboardCard';
+import NavbarTop from './NavbarApp';
 
 const Dashboard = () => {
   const [showSidebar, setShowSidebar] = useState(false);
@@ -10,7 +11,7 @@ const Dashboard = () => {
   const closeSidebar = () => setShowSidebar(false);
 
   return (
-    <>
+    <> <NavbarTop />
       <Sidebar show={showSidebar} handleClose={closeSidebar} />
 
       <Container className="mt-4">
