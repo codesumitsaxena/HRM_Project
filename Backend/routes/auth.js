@@ -8,4 +8,3 @@ router.get('/users', authController.getAllUsers);
 router.get('/users/:id', authController.getUserById);
 
 module.exports = router;
-
