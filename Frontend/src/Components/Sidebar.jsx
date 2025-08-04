@@ -17,7 +17,7 @@ const Sidebar = () => {
     return (
         <>
             <div className='d-flex w-100'>
-                <div style={{width:'40vh', background: '#f8f9fa', height: '100vh', padding: '20px' }}>
+                <div className='profile-section' >
                     {/* Profile Section */}
                     <div className=" text-center mb-4">
                         <div className='d-flex'>
@@ -103,8 +103,8 @@ const Sidebar = () => {
 
                 </div>
                 <div className="lol" style={{width:"80%"}}>
-                    <DashboardHeader />
-                    <EmployeeTable/>
+                  <DashboardHeader />  
+                 <EmployeeTable />   
                 </div>
             </div>
         </>

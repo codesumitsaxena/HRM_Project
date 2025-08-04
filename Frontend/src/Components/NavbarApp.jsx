@@ -22,11 +22,11 @@ import LogoImg from '../assets/logoImg.png'; // or .svg, .jpg depending on your 
 
 const NavbarTop = () => {
   return (
-    <Navbar bg="white" expand="lg" className="justify-content-between w-100 px-3 shadow-sm border-bottom">
-      <Container  className="container d-flex align-items-center">
+    <Navbar expand="lg" className="navbarTop justify-content-between w-100 px-3 py-3 shadow-sm border-bottom">
+      <Container className="container d-flex align-items-center">
         {/* Logo */}
         <Navbar.Brand className="logoSearch  text-info me-3">
-<img src={LogoImg} alt="Logo" className=" img-fluid" style={{height:"auto", width:"100px"}}  />
+          <img src={LogoImg} alt="Logo" className="  img-fluid" style={{ height: "auto", width: "100px" }} />
         </Navbar.Brand>
 
         {/* Search */}

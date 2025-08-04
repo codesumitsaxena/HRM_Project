@@ -1,10 +1,10 @@
 .form-control:focus {
   box-shadow: none !important;
-  border-color: #ced4da !important;
+  
 }
  /* nav */
 .dropdown-basic{
-   
+  background-color: linear-gradient(to bottom right, #3fe2cd47, #ffffff42) !important;
 }
 .searchTopnav{
   width: 100%;
@@ -15,4 +15,16 @@
 }
 .logoSearch{
   width: 100%;
+}
+
+.profile-section{
+  padding: 20px;
+  height: 90vh;
+  background: linear-gradient(to bottom right, #3fe2cd47, #ffffff42);
+  box-shadow: rgba(136, 165, 191, 0.48) 6px 2px 16px 0px, rgba(255, 255, 255, 0.8) -6px -2px 16px 0px;
+
+}
+.navbarTop{
+    background: linear-gradient(to bottom right, #3fe2cd47, #ffffff42);
+
 }
