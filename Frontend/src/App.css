@@ -64,3 +64,14 @@ body, * {
   font-family: 'Inter', sans-serif;
   font-weight: 500;
 }
+/* Add this to your CSS */
+.barchart g.MuiChartsAxisLeft line {
+  display: none;
+}
+.dashbordheader{
+  background: linear-gradient(to bottom right, #b5fff9, #ff894ea6);
+  
+  color: rgb(85, 84, 84) !important;
+  font-weight: 500;
+  font-family: 'Inter', sans-serif;
+}
