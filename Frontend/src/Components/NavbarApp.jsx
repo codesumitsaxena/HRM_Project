@@ -17,7 +17,7 @@ import {
   FaSlidersH,
   FaSignOutAlt,
 } from 'react-icons/fa';
-import LogoImg from '../assets/logoImg.png'; // or .svg, .jpg depending on your file type
+import LogoImg from '../assets/LogoImgg.png'; // or .svg, .jpg depending on your file type
 
 
 const NavbarTop = () => {

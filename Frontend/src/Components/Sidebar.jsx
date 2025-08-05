@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { Tab, Nav, Image, Dropdown, Container } from 'react-bootstrap';
 import {
     FaTachometerAlt,
@@ -11,25 +11,33 @@ import {
 } from 'react-icons/fa';
 import { IoGrid } from "react-icons/io5";
 import DashboardHeader from './Dashboardheader';
-import EmployeeTable from './EmployeeTable.jsx'
+import EmployeeTable from './EmployeeTable.jsx';
+import React, { useState } from 'react';
+import { FaChevronDown, FaChevronUp } from 'react-icons/fa';
+import { NavLink } from 'react-router-dom';
 
 const Sidebar = () => {
+    const [showEmployees, setShowEmployees] = useState(false);
+
+  const toggleEmployees = () => {
+    setShowEmployees(!showEmployees);
+  };
     return (
         <>
             <div className='d-flex w-100'>
                 <div className='profile-section' >
                     {/* Profile Section */}
-                    <div className=" text-center mb-4">
+                    <div className=" mb-4">
                         <div className='d-flex'>
                             <Image
-                                src='src/assets/react.svg'
+                                src='src/assets/aditya pic.jpg'
                                 roundedCircle
-                                style={{ width: '70px', height: '70px' }}
+                                style={{ width: '60px', height: '60px' }}
                             />
-                            <div className="ms-2 mt-2 text-align-left">
-                                <span className="text-muted">Welcome</span><br />
+                            <div className="ms-3 mt-2 text-align-left">
+                                <span className=" ms-1 text-muted">Welcome</span><br />
                                 <Dropdown>
-                                    <Dropdown.Toggle variant="link" className="p-0 fw-bold text-dark" >
+                                    <Dropdown.Toggle variant="link" className="profilename p-0 " >
                                         Jessica Doe
                                     </Dropdown.Toggle>
                                     <Dropdown.Menu>
@@ -39,10 +47,10 @@ const Sidebar = () => {
                                 </Dropdown>
                             </div>
                         </div>
-                        <div className="d-flex justify-content-between mt-3 text-muted">
+                        <div className="menutabs d-flex justify-content-between mt-3 text-muted">
                             <div className="text-center">
                                 <div className="fw-bold">5+</div>
-                                <small>Experience</small>
+                                <small >Experience</small>
                             </div>
                             <div className="text-center">
                                 <div className="fw-bold">400+</div>
@@ -57,12 +65,12 @@ const Sidebar = () => {
 
                     {/* Tabs */}
                     <Tab.Container defaultActiveKey="hr">
-                        <Nav variant="tabs" className="mb-3">
+                        <Nav variant="tabs" className=" mb-3">
                             <Nav.Item>
-                                <Nav.Link eventKey="hr">HR</Nav.Link>
+                                <Nav.Link className='menutabs' >HR</Nav.Link>
                             </Nav.Item>
                             <Nav.Item>
-                                <Nav.Link eventKey="project">Project</Nav.Link>
+                                <Nav.Link className='menutabs' >Project</Nav.Link>
                             </Nav.Item>
                             <Nav.Item>
                                 <Nav.Link disabled><IoGrid /></Nav.Link>
@@ -70,29 +78,35 @@ const Sidebar = () => {
                             <Nav.Item>
                                 <Nav.Link disabled><FaCog /></Nav.Link>
                             </Nav.Item>
-
                         </Nav>
 
                         {/* Menu Items */}
-                        <Tab.Content>
+                        <Tab.Content >
                             <Tab.Pane eventKey="hr">
-                                <Nav className="flex-column">
-                                    <Nav.Link><FaTachometerAlt className="me-2" />HR Dashboard</Nav.Link>
-                                    <Nav.Link><FaUmbrellaBeach className="me-2" />Holidays</Nav.Link>
-                                    <Nav.Link><FaCalendarAlt className="me-2" />Events</Nav.Link>
-                                    <Nav.Link><FaRegListAlt className="me-2" />Activities</Nav.Link>
-                                    <Nav.Link><FaProjectDiagram className="me-2" />HR Social</Nav.Link>
-                                    <Dropdown className=" text-white rounded">
-                                        <Dropdown.Toggle variant="link" id="dropdown-basic">
-                                            <FaUsers className="me-2" />Employees
-                                        </Dropdown.Toggle>
-                                        <Dropdown.Menu>
-                                            <Dropdown.Item href="#/action-1">Action</Dropdown.Item>
-                                            <Dropdown.Item href="#/action-2">Another action</Dropdown.Item>
-                                            <Dropdown.Item href="#/action-3">Something else</Dropdown.Item>
-                                        </Dropdown.Menu>
-                                    </Dropdown>
-                                    <Nav.Link><FaUsers className="me-2" />Accounts</Nav.Link>
+                                <Nav className=" flex-column">
+                                    <Nav.Link className='menuButton' ><FaTachometerAlt className=" me-2" />HR Dashboard</Nav.Link>
+                                    <Nav.Link className='menuButton'><FaUmbrellaBeach className="me-2" />Holidays</Nav.Link>
+                                    <Nav.Link className='menuButton'><FaCalendarAlt className="me-2" />Events</Nav.Link>
+                                    <Nav.Link className='menuButton'><FaRegListAlt className="me-2" />Activities</Nav.Link>
+                                    <Nav.Link className='menuButton'><FaProjectDiagram className="me-2" />HR Social</Nav.Link>
+                                    <div>
+                                        <Nav.Link
+                                            onClick={toggleEmployees}
+                                            className="menuButton"
+                                        >
+                                            <span><FaUsers className=" me-2" />Employees</span>
+                                            {/* {showEmployees ? <FaChevronUp /> : <FaChevronDown />} */}
+                                        </Nav.Link>
+
+                                        {showEmployees && (
+                                            <div className="ms-4">
+                                                <Nav.Link as={NavLink} to="/employees/list" className="menuButton"> View All</Nav.Link>
+                                                <Nav.Link as={NavLink} to="/employees/add" className="menuButton"> Add New</Nav.Link>
+                                                <Nav.Link as={NavLink} to="/employees/roles" className="menuButton"> Manage Roles</Nav.Link>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <Nav.Link className='menuButton'><FaUsers className="me-2" />Accounts</Nav.Link>
                                 </Nav>
                             </Tab.Pane>
                             <Tab.Pane eventKey="project">
