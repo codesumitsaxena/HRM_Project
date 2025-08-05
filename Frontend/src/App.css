@@ -2,10 +2,7 @@
   box-shadow: none !important;
   
 }
- /* nav */
-.dropdown-basic{
-   
-}
+
 .searchTopnav{
   width: 100%;
 }
@@ -27,4 +24,8 @@
 .navbarTop{
     background: linear-gradient(to bottom right, #3fe2cd47, #ffffff42);
 
+}
+
+.loginRightContainer{
+  background: linear-gradient(to bottom right, #3fe2cd47, #ffffff42);
 }
