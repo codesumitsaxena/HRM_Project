@@ -33,6 +33,8 @@ body, * {
 
 
 
-.loginRightContainer{
+
+
+.loginContainer{
   background: linear-gradient(to bottom right, #3fe2cd47, #ffffff42);
 }
