@@ -5,4 +5,5 @@ const departmentController = require('../controllers/Departmentcontroller'); // 
 router.post('/', departmentController.addDepartment);
 router.get('/', departmentController.getAllDepartments);
 
+
 module.exports = router;
