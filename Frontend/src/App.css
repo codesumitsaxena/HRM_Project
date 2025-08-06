@@ -30,14 +30,16 @@ body, * {
 
 .profile-section {
   padding: 25px;
-  height: 90vh;
+  height: 100%;
   background: linear-gradient(to bottom right, #3fe2cd47, #ffffff42);
   box-shadow: rgba(136, 165, 191, 0.48) 6px 2px 16px 0px,
-              rgba(255, 255, 255, 0.8) -6px -2px 16px 0px;
+rgba(255, 255, 255, 0.8) -6px -2px 16px 0px;
 }
 
 .navbarTop {
   background: linear-gradient(to bottom right, #3fe2cd47, #ffffff42);
+  position: sticky !important;
+  z-index: 1000 !important;
 }
 .menuButton{
   color: rgb(85, 84, 84) !important;
@@ -69,8 +71,6 @@ body, * {
   display: none;
 }
 .dashbordheader{
-  background: linear-gradient(to bottom right, #b5fff9, #ff894ea6);
-  
   color: rgb(85, 84, 84) !important;
   font-weight: 500;
   font-family: 'Inter', sans-serif;

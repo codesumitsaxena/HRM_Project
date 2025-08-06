@@ -29,7 +29,7 @@ const EmployeeTable = () => {
   useEffect(() => {
     const fetchEmployees = async () => {
       try {
-        const res = await fetch("http://localhost:3000/api/employees");
+        const res = await fetch("http://localhost:3000/api/employee");
         const data = await res.json();
         setEmployees(data);
       } catch (error) {
