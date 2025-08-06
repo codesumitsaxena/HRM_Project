@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Form, Button } from "react-bootstrap";
 import { Link, useNavigate } from 'react-router-dom'; 
-// import LoginFormImg from '../assets/LoginPageImg.jpg'
+import LoginFormImg from '../assets/LoginPageImg.jpg'
 
 
 
@@ -36,7 +36,7 @@ const handleClick = () => {
         </div>
 
         {/* RIGHT FORM SECTION */}
-        <div className="col-lg-6 bg-light d-flex align-items-center justify-content-center">
+        <div className="col-lg-6 loginContainer d-flex align-items-center justify-content-center">
           <div className="w-100 p-4" style={{ maxWidth: "400px" }}>
             <h2 className="fw-bold mb-2 text-center">
               {isSignup ? "Create an account" : "Welcome back"}
