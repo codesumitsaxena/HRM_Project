@@ -1,4 +1,6 @@
 
+
+/* ✅ Apply Inter font globally */
 body, * {
   font-family: 'Inter', sans-serif;
 }
@@ -8,7 +10,10 @@ body, * {
   box-shadow: none !important;
 }
 
-
+/* ✅ Navbar & UI Styling */
+.dropdown-basic {
+  /* Add your styles here if needed */
+}
 
 .searchTopnav {
   width: 100%;
@@ -25,16 +30,53 @@ body, * {
 
 .profile-section {
   padding: 25px;
-  height: 90vh;
+  height: 100%;
   background: linear-gradient(to bottom right, #3fe2cd47, #ffffff42);
   box-shadow: rgba(136, 165, 191, 0.48) 6px 2px 16px 0px,
-              rgba(255, 255, 255, 0.8) -6px -2px 16px 0px;
+rgba(255, 255, 255, 0.8) -6px -2px 16px 0px;
 }
 
-
-
-
-
-.loginContainer{
+.navbarTop {
   background: linear-gradient(to bottom right, #3fe2cd47, #ffffff42);
+  position: sticky !important;
+  z-index: 1000 !important;
+}
+.menuButton{
+  color: rgb(85, 84, 84) !important;
+  font-weight: 500;
+  transition: .2s !important;
+  font-family: 'Inter', sans-serif;
+  text-decoration: none !important;
+}
+.menuButton:hover {
+  background-color: rgb(0, 0, 0) !important;
+  color: white !important;
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  border-radius: 8px;
+}
+.menutabs{
+  color: rgb(85, 84, 84) !important;
+  font-weight: 500;
+  font-family: 'Inter', sans-serif;
+}
+.profilename{
+  color: rgb(0, 0, 0) !important;
+  text-decoration: none !important;
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+}
+/* Add this to your CSS */
+.barchart g.MuiChartsAxisLeft line {
+  display: none;
+}
+.dashbordheader{
+  background: linear-gradient(to bottom right, #b5fff9, #ff894ea6);
+  
+  color: rgb(85, 84, 84) !important;
+  font-weight: 500;
+  font-family: 'Inter', sans-serif;
+}
+.css-b7dj7n-MuiList-root{
+  padding: 0;
 }
