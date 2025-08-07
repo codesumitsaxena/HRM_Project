@@ -13,7 +13,6 @@ import { IoGrid } from "react-icons/io5";
 import DashboardHeader from './Dashboardheader';
 import EmployeeTable from './EmployeeTable.jsx';
 import React, { useState } from 'react';
-import { FaChevronDown, FaChevronUp } from 'react-icons/fa';
 import { NavLink } from 'react-router-dom';
 import LeaveRequest from './LeaveRequest'
 
@@ -101,9 +100,9 @@ const Sidebar = () => {
 
                                         {showEmployees && (
                                             <div className="ms-4">
-                                                <Nav.Link as={NavLink} to="/employees/list" className="menuButton"> View All</Nav.Link>
-                                                <Nav.Link as={NavLink} to="/employees/add" className="menuButton"> Add New</Nav.Link>
-                                                <Nav.Link as={NavLink} to="/employees/roles" className="menuButton"> Manage Roles</Nav.Link>
+                                                <Nav.Link as={NavLink} to="/employees/list" className="menuButton"> ALl employee</Nav.Link>
+                                                <Nav.Link as={NavLink} to="/employees/add" className="menuButton"> Leave Request</Nav.Link>
+                                                <Nav.Link as={NavLink} to="/employees/roles" className="menuButton"> Department</Nav.Link>
                                             </div>
                                         )}
                                     </div>
