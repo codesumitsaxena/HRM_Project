@@ -1,10 +1,6 @@
 const mysql = require('mysql2');
-<<<<<<< HEAD
-require('dotenv').config();
-=======
 const dotenv = require('dotenv');
 dotenv.config();
->>>>>>> ef8af0fda68bec7e1b114289463c4f796226fcef
 
 const db = mysql.createConnection({
   host: process.env.DB_HOST,
@@ -15,11 +11,7 @@ const db = mysql.createConnection({
 
 db.connect((err) => {
   if (err) throw err;
-<<<<<<< HEAD
-  console.log('✅ MySQL connected.');
-=======
   console.log("✅ MySQL connected");
->>>>>>> ef8af0fda68bec7e1b114289463c4f796226fcef
 });
 
 module.exports = db;

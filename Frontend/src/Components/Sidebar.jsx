@@ -15,6 +15,7 @@ import EmployeeTable from './EmployeeTable.jsx';
 import React, { useState } from 'react';
 import { FaChevronDown, FaChevronUp } from 'react-icons/fa';
 import { NavLink } from 'react-router-dom';
+import LeaveRequest from './LeaveRequest'
 
 const Sidebar = () => {
     const [showEmployees, setShowEmployees] = useState(false);
@@ -119,6 +120,7 @@ const Sidebar = () => {
                 <div className="lol" style={{width:"80%"}}>
                   <DashboardHeader />  
                  <EmployeeTable />   
+                 <LeaveRequest/>
                 </div>
             </div>
         </>

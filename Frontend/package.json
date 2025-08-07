@@ -15,11 +15,7 @@
     "@fontsource/inter": "^5.2.6",
     "@mui/icons-material": "^7.2.0",
     "@mui/material": "^7.2.0",
-<<<<<<< HEAD
     "axios": "^1.11.0",
-=======
-    "@mui/x-charts": "^8.9.2",
->>>>>>> 1ba24e7634287c784f5408a897c9c377d091f571
     "bootstrap": "^5.3.7",
     "bootstrap-icons": "^1.13.1",
     "react": "^19.1.0",

@@ -1,17 +1,9 @@
 import React, { useState } from "react";
-<<<<<<< HEAD
-import { Form, Button } from "react-bootstrap";
-import { Link, useNavigate } from 'react-router-dom'; 
-import LoginFormImg from '../assets/LoginPageImg.jpg'
-
-
-=======
 import { Form, Button, Alert, InputGroup } from "react-bootstrap";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import LoginFormImg from "../assets/LoginPageImg.jpg";
 import { IoIosEye, IoIosEyeOff } from "react-icons/io";
->>>>>>> ef8af0fda68bec7e1b114289463c4f796226fcef
 
 function Login() {
   const [isSignup, setIsSignup] = useState(false);
