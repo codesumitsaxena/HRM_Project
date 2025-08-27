@@ -9,12 +9,14 @@ import 'bootstrap-icons/font/bootstrap-icons.css'; // Bootstrap Icons
 import '@fontsource/inter/400.css'; // Inter Regular
 import '@fontsource/inter/600.css'; // Inter SemiBold (optional)
 import '@fontsource/inter/700.css'; // Inter Bold (optional)
+import EmployeeTable from './Components/EmployeeTable';
 
 function App() {
   return (
     <Routes>
       <Route path="/" element={<Login />} />
       <Route path="/dashboard" element={<Dashboard />} />
+      {/* <Route path="/employeeTable" element={<EmployeeTable />} /> */}
     </Routes>
   );
 }

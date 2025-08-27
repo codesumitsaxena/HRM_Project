@@ -20,14 +20,15 @@ body, * {
 }
 
 .righticon {
-  width: 100%;
   color: rgb(146, 145, 145);
 }
 
 .logoSearch {
-  width: 100%;
+  width: 20%;
 }
-
+.toggle-size{
+  font-size: 1rem !important;
+}
 .profile-section {
   padding: 25px;
   height: 100%;
@@ -72,11 +73,20 @@ rgba(255, 255, 255, 0.8) -6px -2px 16px 0px;
 }
 .dashbordheader{
   background: linear-gradient(to bottom right, #b5fff9, #ff894ea6);
-  
   color: rgb(85, 84, 84) !important;
   font-weight: 500;
   font-family: 'Inter', sans-serif;
 }
 .css-b7dj7n-MuiList-root{
   padding: 0;
+}
+.list-sidebar{
+  margin: 0 !important;
+  padding: 0 !important;
+}
+.piperdata{
+
+  width: 100%;
+  text-align: -webkit-center;
+  padding: 20px;
 }

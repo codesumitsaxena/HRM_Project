@@ -23,6 +23,13 @@ import DashboardHeader from './Dashboardheader';
 import EmployeeTable from './EmployeeTable';
 import { Image, Dropdown, Nav, Tab } from 'react-bootstrap';
 import { NavLink } from 'react-router-dom'; // ✅ Needed for routing
+import DepartmentTable from './DepartmentTable';
+import { MdOutlineManageAccounts } from "react-icons/md";
+import { FiUsers } from "react-icons/fi";
+import SalaryChart from './hrdashboard/salarychart';
+import HRDashboard from './hrdashboard/hrdashboard';
+import EmployeeDashboard from './hrdashboard/employeDashboard';
+
 
 const drawerWidth = 240;
 
@@ -51,13 +58,12 @@ const Sidebar = () => {
         <NavbarTop />
       </Box>
 
-      <Box sx={{ display: 'flex' }}>
+      <Box sx={{ display: 'flex'  }}>
         {/* Sidebar */}
         <Drawer
           variant="permanent"
           sx={{
             width: '22%',
-            
             flexShrink: 0,
             [`& .MuiDrawer-paper`]: {
               width: '22%',
@@ -72,7 +78,7 @@ const Sidebar = () => {
             }
           }}
         >
-          <List >
+          <List className='list-sidebar' >
             <div className="profile-section px-3">
               <div className="mb-4">
                 <div className="d-flex">
@@ -154,58 +160,35 @@ const Sidebar = () => {
                       <Nav.Link className="menuButton">
                         <FaProjectDiagram className="me-2" /> HR Social
                       </Nav.Link>
-                      <Nav.Link className="menuButton">
-                        <FaUmbrellaBeach className="me-2" /> Holidays
-                      </Nav.Link>
-                      <Nav.Link className="menuButton">
-                        <FaCalendarAlt className="me-2" /> Events
-                      </Nav.Link>
-                      <Nav.Link className="menuButton">
-                        <FaRegListAlt className="me-2" /> Activities
-                      </Nav.Link>
-                      <Nav.Link className="menuButton">
-                        <FaProjectDiagram className="me-2" /> HR Social
-                      </Nav.Link>
-                      <Nav.Link className="menuButton">
-                        <FaCalendarAlt className="me-2" /> Events
-                      </Nav.Link>
-                      <Nav.Link className="menuButton">
-                        <FaRegListAlt className="me-2" /> Activities
-                      </Nav.Link>
-                      <Nav.Link className="menuButton">
-                        <FaProjectDiagram className="me-2" /> HR Social
-                      </Nav.Link>
-                      <Nav.Link className="menuButton">
-                        <FaCalendarAlt className="me-2" /> Events
-                      </Nav.Link>
-                      <Nav.Link className="menuButton">
-                        <FaRegListAlt className="me-2" /> Activities
-                      </Nav.Link>
-                      <Nav.Link className="menuButton">
-                        <FaProjectDiagram className="me-2" /> HR Social
-                      </Nav.Link>
-                      
-
                       <Nav.Link onClick={toggleEmployees} className="menuButton">
                         <FaUsers className="me-2" /> Employees
                       </Nav.Link>
+                      
 
                       {showEmployees && (
                         <div className="ms-4">
                           <Nav.Link as={NavLink} to="/employees/list" className="menuButton">
-                            View All
+                           All Employee
                           </Nav.Link>
                           <Nav.Link as={NavLink} to="/employees/add" className="menuButton">
-                            Add New
+                            Leave Requests
                           </Nav.Link>
                           <Nav.Link as={NavLink} to="/employees/roles" className="menuButton">
-                            Manage Roles
+                            Attendance
+                          </Nav.Link>
+                          <Nav.Link as={NavLink} to="/employees/roles" className="menuButton">
+                            Department
                           </Nav.Link>
                         </div>
                       )}
-
+                      <Nav.Link  className="menuButton">
+                        <FiUsers className="me-2" /> Users
+                      </Nav.Link>
                       <Nav.Link className="menuButton">
-                        <FaUsers className="me-2" /> Accounts
+                        <FiUsers className="me-2" /> Authentication
+                      </Nav.Link>
+                      <Nav.Link className="menuButton">
+                        <MdOutlineManageAccounts className="me-2" /> Accounts
                       </Nav.Link>
                     </Nav>
                   </Tab.Pane>
@@ -224,15 +207,20 @@ const Sidebar = () => {
                   sx={{
                       width: '78%', // Remaining space after sidebar (100% - 22%)
                       flexGrow: 1,
-                      marginTop: '70px', // Pushes content below the AppBar/NavbarTop
-                      height: 'calc(100vh - 78px)', // Fits remaining screen height after navbar
+                      marginTop: '80px', // Pushes content below the AppBar/NavbarTop
+                      height: 'calc(100vh - 80px)', // Fits remaining screen height after navbar
                       overflowY: 'auto', // Scroll only inside content
-                      padding: 3,
+                      padding:3,
                       '&::-webkit-scrollbar': { display: 'none' } // Hide scrollbar (optional)
                   }}
               >
                   <DashboardHeader />
-          <EmployeeTable />
+          {/* <EmployeeTable /> */}
+          {/* <DepartmentTable />  */}
+          <SalaryChart />
+          <HRDashboard/>
+          <EmployeeDashboard />
+          
         </Box>
       </Box>
     </>
