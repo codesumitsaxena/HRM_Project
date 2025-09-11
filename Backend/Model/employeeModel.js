@@ -1,54 +1,42 @@
 const db = require('../config/db');
 
-exports.getAllEmployees = (callback) => {
-  const query = 'SELECT * FROM employees';
-  db.query(query, callback);
+const Employee = {
+  // ✅ Get all employees
+  getAll: (callback) => {
+    db.query('SELECT * FROM employee', callback);
+  },
+
+  // ✅ Get single employee by ID
+  getById: (id, callback) => {
+    db.query('SELECT * FROM employee WHERE Employee_Id = ?', [id], callback);
+  },
+
+  // ✅ Create employee
+  create: (employeeData, callback) => {
+    const { First_Name, Last_Name, Email, Phone, Address, Join_Date, Designation, Basic_Salary, Department_Id, Image_Path } = employeeData;
+    
+    db.query(
+      'INSERT INTO employee (First_Name, Last_Name, Email, Phone, Address, Join_Date, Designation, Basic_Salary, Department_Id, Image_Path) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [First_Name, Last_Name, Email, Phone, Address, Join_Date, Designation, Basic_Salary, Department_Id, Image_Path],
+      callback
+    );
+  },
+
+  // ✅ Update employee
+  update: (id, employeeData, callback) => {
+    const { First_Name, Last_Name, Email, Phone, Address, Join_Date, Designation, Basic_Salary, Department_Id, Image_Path } = employeeData;
+
+    db.query(
+      'UPDATE employee SET First_Name=?, Last_Name=?, Email=?, Phone=?, Address=?, Join_Date=?, Designation=?, Basic_Salary=?, Department_Id=?, Image_Path=? WHERE Employee_Id=?',
+      [First_Name, Last_Name, Email, Phone, Address, Join_Date, Designation, Basic_Salary, Department_Id, Image_Path, id],
+      callback
+    );
+  },
+
+  // ✅ Delete employee
+  delete: (id, callback) => {
+    db.query('DELETE FROM employee WHERE Employee_Id = ?', [id], callback);
+  }
 };
 
-exports.createEmployee = (data, callback) => {
-  const query = `
-    INSERT INTO employees 
-    (first_name, last_name, employee_id, phone, join_date, role, email) 
-    VALUES (?, ?, ?, ?, ?, ?, ?)
-  `;
-  const values = [
-    data.first_name,
-    data.last_name,
-    data.employee_id,
-    data.phone,
-    data.join_date,
-    data.role,
-    data.email
-  ];
-  db.query(query, values, callback);
-};
-
-exports.updateEmployee = (id, data, callback) => {
-  const query = `
-    UPDATE employees SET 
-      first_name = ?, 
-      last_name = ?, 
-      employee_id = ?, 
-      phone = ?, 
-      join_date = ?, 
-      role = ?, 
-      email = ? 
-    WHERE id = ?
-  `;
-  const values = [
-    data.first_name,
-    data.last_name,
-    data.employee_id,
-    data.phone,
-    data.join_date,
-    data.role,
-    data.email,
-    id
-  ];
-  db.query(query, values, callback);
-};
-
-exports.deleteEmployee = (id, callback) => {
-  const query = 'DELETE FROM employees WHERE id = ?';
-  db.query(query, [id], callback);
-};
+module.exports = Employee;

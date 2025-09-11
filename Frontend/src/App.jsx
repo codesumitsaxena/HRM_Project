@@ -2,7 +2,7 @@
 import { Routes, Route } from 'react-router-dom';
 import Login from './Components/Login';
 import Dashboard from './Components/Dashboard';
-
+import React from 'react';
 import './App.css'; // Custom CSS
 import 'bootstrap/dist/css/bootstrap.min.css'; // Bootstrap
 import 'bootstrap-icons/font/bootstrap-icons.css'; // Bootstrap Icons

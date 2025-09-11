@@ -1,6 +1,14 @@
-
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 body, * {
   font-family: 'Inter', sans-serif;
+}
+
+
+/* Your custom CSS after imports */
+body {
+  margin: 0;
 }
 
 /* ✅ Input focus styling override */

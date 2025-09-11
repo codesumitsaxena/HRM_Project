@@ -1,21 +1,19 @@
 const express = require('express');
+const bodyParser = require('body-parser');
 const cors = require('cors');
-const dotenv = require('dotenv');
+const db = require('./config/db');
 const authRoutes = require('./routes/auth');
-const employeeRoutes = require('./routes/employeeRoutes')
-require('dotenv').config();
+const employeeRoutes = require('./routes/employeeRoutes');
 
-dotenv.config();
 const app = express();
-
-app.use(express.json());  // Only once
 app.use(cors());
+app.use(bodyParser.json());
 
+// ✅ Use employee routes
 app.use('/api/auth', authRoutes);
-app.use('/api/employees', employeeRoutes);
+app.use('/employees', employeeRoutes);
 
-
-
-app.listen(process.env.PORT, () => {
-  console.log(`🚀 Server running on port ${process.env.PORT}`);
+// ✅ Start server
+app.listen(3000, () => {
+  console.log('🚀 Server running at http://localhost:3000');
 });

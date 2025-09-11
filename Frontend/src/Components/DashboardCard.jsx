@@ -1,4 +1,6 @@
 import { Card } from 'react-bootstrap';
+import React from 'react';
+
 
 const DashboardCard = ({ title, count, variant }) => {
   return (
