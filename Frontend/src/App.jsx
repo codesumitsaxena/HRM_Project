@@ -2,6 +2,8 @@
 import { Routes, Route } from 'react-router-dom';
 import Login from './Components/Login';
 import Dashboard from './Components/Dashboard';
+import Employee from './Components/EmployeeTable'
+import Department from './Components/DepartmentTable'
 import React from 'react';
 import './App.css'; // Custom CSS
 import 'bootstrap/dist/css/bootstrap.min.css'; // Bootstrap
@@ -15,6 +17,10 @@ function App() {
     <Routes>
       <Route path="/" element={<Login />} />
       <Route path="/dashboard" element={<Dashboard />} />
+      <Route path="/Employee" element={<Employee />} />
+      <Route path="/Department" element={<Department />} />
+
+      
     </Routes>
   );
 }

@@ -2,18 +2,31 @@ import React, { useState, useEffect } from 'react';
 import { 
   Users, Plus, Search, Edit3, Trash2, Eye, 
   Filter, Download, Upload, Phone, Mail, 
-  Calendar, User, IdCard, Briefcase 
+  Calendar, User, IdCard, Briefcase, MapPin,
+  DollarSign, Building2, Image
 } from 'lucide-react';
 
 const EmployeeTable = () => {
   const [employees, setEmployees] = useState([]);
-
+  const [saving, setSaving] = useState(false); // ADD THIS LINE
+  
   useEffect(() => {
     fetch("http://localhost:3000/employees")
       .then((res) => res.json())
       .then((data) => setEmployees(data))
       .catch((err) => console.error("Error fetching employees:", err));
-  }, []); // [] => run only once when component mounts
+  }, []);
+
+  const fetchEmployees = async () => {
+    try {
+      const response = await fetch("http://localhost:3000/employees");
+      const data = await response.json();
+      setEmployees(data);
+    } catch (err) {
+      console.error("Error fetching employees:", err);
+    }
+  };
+  
 
   const [search, setSearch] = useState('');
   const [showModal, setShowModal] = useState(false);
@@ -21,25 +34,45 @@ const EmployeeTable = () => {
   const [editingEmployee, setEditingEmployee] = useState(null);
   const [viewingEmployee, setViewingEmployee] = useState(null);
   const [filterDepartment, setFilterDepartment] = useState('');
-  const [filterStatus, setFilterStatus] = useState('');
+  const [filterDesignation, setFilterDesignation] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(8);
 
   const [formData, setFormData] = useState({
-    first_name: '',
-    last_name: '',
-    employee_id: '',
-    phone: '',
-    join_date: '',
-    role: '',
-    email: '',
-    department: '',
-    salary: '',
-    status: 'Active'
+    Employee_Id: '',
+    First_Name: '',
+    Last_Name: '',
+    Email: '',
+    Phone: '',
+    Address: '',
+    Join_Date: '',
+    Designation: '',
+    Basic_Salary: '',
+    Department_Id: '',
+    Image_Path: ''
   });
 
-  const departments = ['IT', 'HR', 'Marketing', 'Finance', 'Operations'];
-  const roles = ['Software Engineer', 'HR Manager', 'Marketing Specialist', 'Accountant', 'Manager'];
+  const departments = [
+    { id: 'DEPT001', name: 'IT' },
+    { id: 'DEPT002', name: 'HR' },
+    { id: 'DEPT003', name: 'Marketing' },
+    { id: 'DEPT004', name: 'Finance' },
+    { id: 'DEPT005', name: 'Operations' }
+  ];
+
+  const designations = [
+    'Software Engineer',
+    'Senior Software Engineer',
+    'HR Manager',
+    'HR Executive',
+    'Marketing Manager',
+    'Marketing Executive',
+    'Finance Manager',
+    'Accountant',
+    'Operations Manager',
+    'Team Lead',
+    'Project Manager'
+  ];
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -48,16 +81,17 @@ const EmployeeTable = () => {
   const openAddModal = () => {
     setEditingEmployee(null);
     setFormData({
-      first_name: '',
-      last_name: '',
-      employee_id: '',
-      phone: '',
-      join_date: '',
-      role: '',
-      email: '',
-      department: '',
-      salary: '',
-      status: 'Active'
+      Employee_Id: '',
+      First_Name: '',
+      Last_Name: '',
+      Email: '',
+      Phone: '',
+      Address: '',
+      Join_Date: '',
+      Designation: '',
+      Basic_Salary: '',
+      Department_Id: '',
+      Image_Path: ''
     });
     setShowModal(true);
   };
@@ -73,29 +107,112 @@ const EmployeeTable = () => {
     setShowViewModal(true);
   };
 
-  const handleSave = () => {
-    if (editingEmployee) {
-      setEmployees(employees.map(emp => 
-        emp.id === editingEmployee.id ? { ...formData, id: editingEmployee.id } : emp
-      ));
-    } else {
-      const newEmployee = { ...formData, id: Date.now() };
-      setEmployees([...employees, newEmployee]);
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      // 👉 Format Join_Date and Department_Id before sending
+      const formattedData = {
+        ...formData,
+        Join_Date: formData.Join_Date
+          ? new Date(formData.Join_Date).toISOString().split("T")[0] // yyyy-mm-dd
+          : null,
+        Department_Id: formData.Department_Id
+          ? parseInt(formData.Department_Id.replace("DEPT", ""), 10) // "DEPT003" -> 3
+          : null,
+      };
+  
+      if (editingEmployee) {
+        // Update existing employee (PUT /:id)
+        const response = await fetch(
+          `http://localhost:3000/employees/${editingEmployee.Employee_Id}`,
+          {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(formattedData),
+          }
+        );
+  
+        if (response.ok) {
+          alert("Employee updated successfully!");
+          await fetchEmployees();
+          setShowModal(false);
+        } else {
+          const errorData = await response.json();
+          alert(`Failed to update employee: ${errorData.error || "Unknown error"}`);
+        }
+      } else {
+        // Add new employee (POST /)
+        const response = await fetch("http://localhost:3000/employees", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(formattedData),
+        });
+  
+        if (response.ok) {
+          alert("Employee added successfully!");
+          await fetchEmployees();
+          setShowModal(false);
+        } else {
+          const errorData = await response.json();
+          alert(`Failed to add employee: ${errorData.error || "Unknown error"}`);
+        }
+      }
+    } catch (error) {
+      console.error("Error saving employee:", error);
+      alert("Error saving employee. Please try again.");
+    } finally {
+      setSaving(false);
     }
-    setShowModal(false);
+  };
+  
+  
+  
+  
+  
+
+  const handleDelete = async (employeeId) => {
+    if (!window.confirm('Are you sure you want to delete this employee?')) {
+      return;
+    }
+    
+    try {
+      const response = await fetch(`http://localhost:3000/employees/${employeeId}`, {
+        method: "DELETE",
+      });
+  
+      if (response.ok) {
+        console.log("Employee deleted successfully!");
+        alert("Employee deleted successfully!");
+        await fetchEmployees(); // Add this line to refresh the list
+      } else {
+        const contentType = response.headers.get("content-type");
+        if (contentType && contentType.includes("application/json")) {
+          const errorData = await response.json();
+          console.error("Failed to delete employee:", errorData);
+          alert(`Failed to delete employee: ${errorData.message || 'Unknown error'}`);
+        } else {
+          console.error("Failed to delete employee. Server responded with a non-JSON error.");
+          alert(`Failed to delete employee: ${response.status} ${response.statusText}`);
+        }
+      }
+    } catch (error) {
+      console.error("Error deleting employee:", error);
+      alert("Error deleting employee. Please try again. Check server connection.");
+    }
   };
 
-  const handleDelete = (id) => {
-    if (window.confirm('Are you sure you want to delete this employee?')) {
-      setEmployees(employees.filter(emp => emp.id !== id));
-    }
+
+  const getDepartmentName = (deptId) => {
+    const dept = departments.find(d => d.id === deptId);
+    return dept ? dept.name : deptId;
   };
 
   const filteredEmployees = employees.filter(emp => {
-    const matchesSearch = `${emp.first_name} ${emp.last_name} ${emp.employee_id}`.toLowerCase().includes(search.toLowerCase());
-    const matchesDepartment = filterDepartment === '' || emp.department === filterDepartment;
-    const matchesStatus = filterStatus === '' || emp.status === filterStatus;
-    return matchesSearch && matchesDepartment && matchesStatus;
+    const searchText = `${emp.First_Name || ''} ${emp.Last_Name || ''} ${emp.Employee_Id || ''}`.toLowerCase();
+    const matchesSearch = searchText.includes(search.toLowerCase());
+    const matchesDepartment = filterDepartment === '' || emp.Department_Id === filterDepartment;
+    const matchesDesignation = filterDesignation === '' || emp.Designation === filterDesignation;
+    return matchesSearch && matchesDepartment && matchesDesignation;
   });
 
   // Pagination
@@ -201,24 +318,25 @@ const EmployeeTable = () => {
               >
                 <option value="">All Departments</option>
                 {departments.map(dept => (
-                  <option key={dept} value={dept}>{dept}</option>
+                  <option key={dept.id} value={dept.id}>{dept.name}</option>
                 ))}
               </select>
             </div>
             <div className="col-md-3 mb-3">
               <select
                 className="form-select"
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
+                value={filterDesignation}
+                onChange={(e) => setFilterDesignation(e.target.value)}
                 style={{
                   background: "linear-gradient(to right, #ffffff80, #3fe2cd20)",
                   border: "1px solid rgba(63, 226, 205, 0.3)",
                   borderRadius: "8px"
                 }}
               >
-                <option value="">All Status</option>
-                <option value="Active">Active</option>
-                <option value="Inactive">Inactive</option>
+                <option value="">All Designations</option>
+                {designations.map(designation => (
+                  <option key={designation} value={designation}>{designation}</option>
+                ))}
               </select>
             </div>
             <div className="col-md-2 mb-3">
@@ -233,7 +351,7 @@ const EmployeeTable = () => {
                 onClick={() => {
                   setSearch('');
                   setFilterDepartment('');
-                  setFilterStatus('');
+                  setFilterDesignation('');
                   setCurrentPage(1);
                 }}
               >
@@ -259,26 +377,26 @@ const EmployeeTable = () => {
             <div className="card-body">
               <div className="d-flex justify-content-between align-items-start mb-2">
                 <h6 className="mb-0" style={{ color: "#2c5f5d" }}>
-                  {emp.first_name} {emp.last_name}
+                  {emp.First_Name} {emp.Last_Name}
                 </h6>
                 <span 
-                  className={`badge ${emp.status === 'Active' ? 'bg-success' : 'bg-secondary'}`}
+                  className="badge bg-primary"
                   style={{ borderRadius: "20px" }}
                 >
-                  {emp.status}
+                  {emp.Employee_Id}
                 </span>
               </div>
               <p className="small mb-1" style={{ color: "#5a6c6b" }}>
-                <IdCard size={14} className="me-1" />
-                {emp.employee_id} | {emp.role}
+                <Briefcase size={14} className="me-1" />
+                {emp.Designation}
               </p>
               <p className="small mb-1" style={{ color: "#5a6c6b" }}>
                 <Mail size={14} className="me-1" />
-                {emp.email}
+                {emp.Email}
               </p>
               <p className="small mb-3" style={{ color: "#5a6c6b" }}>
                 <Phone size={14} className="me-1" />
-                {emp.phone}
+                {emp.Phone}
               </p>
               <div className="d-flex gap-2">
                 <button 
@@ -313,8 +431,7 @@ const EmployeeTable = () => {
                     border: "none",
                     borderRadius: "6px"
                   }}
-                  onClick={() => handleDelete(emp.id)}
-                >
+                  onClick={() => handleDelete(emp.Employee_Id)}                >
                   <Trash2 size={14} />
                 </button>
               </div>
@@ -341,9 +458,9 @@ const EmployeeTable = () => {
                     <th className="border-0 px-4 py-3" style={{ color: "#2c5f5d" }}>Employee</th>
                     <th className="border-0 px-4 py-3" style={{ color: "#2c5f5d" }}>ID</th>
                     <th className="border-0 px-4 py-3" style={{ color: "#2c5f5d" }}>Contact</th>
-                    <th className="border-0 px-4 py-3" style={{ color: "#2c5f5d" }}>Department</th>
+                    <th className="border-0 px-4 py-3" style={{ color: "#2c5f5d" }}>Department Id</th>
                     <th className="border-0 px-4 py-3" style={{ color: "#2c5f5d" }}>Join Date</th>
-                    <th className="border-0 px-4 py-3" style={{ color: "#2c5f5d" }}>Address</th>
+                    <th className="border-0 px-4 py-3" style={{ color: "#2c5f5d" }}>Salary</th>
                     <th className="border-0 px-4 py-3 text-center" style={{ color: "#2c5f5d" }}>Actions</th>
                   </tr>
                 </thead>
@@ -355,7 +472,7 @@ const EmployeeTable = () => {
                           <div className="fw-bold" style={{ color: "#2c5f5d" }}>
                             {emp.First_Name} {emp.Last_Name}
                           </div>
-                          <small style={{ color: "#5a6c6b" }}>{emp.role}</small>
+                          <small style={{ color: "#5a6c6b" }}>{emp.Designation}</small>
                         </div>
                       </td>
                       <td className="px-4 py-3" style={{ color: "#2c5f5d" }}>{emp.Employee_Id}</td>
@@ -365,11 +482,15 @@ const EmployeeTable = () => {
                           <div>{emp.Phone}</div>
                         </div>
                       </td>
-                      <td className="px-4 py-3" style={{ color: "#2c5f5d" }}>{emp.Designation}</td>
                       <td className="px-4 py-3" style={{ color: "#2c5f5d" }}>
-                        {new Date(emp.Join_Date).toLocaleDateString()}
+                        {getDepartmentName(emp.Department_Id)}
                       </td>
-                      <td className="px-4 py-3" style={{ color: "#2c5f5d" }}> {emp.Address}</td>
+                      <td className="px-4 py-3" style={{ color: "#2c5f5d" }}>
+                        {emp.Join_Date ? new Date(emp.Join_Date).toLocaleDateString() : 'N/A'}
+                      </td>
+                      <td className="px-4 py-3" style={{ color: "#2c5f5d" }}>
+                        {emp.Basic_Salary ? `₹${parseInt(emp.Basic_Salary).toLocaleString()}` : 'N/A'}
+                      </td>
                       
                       <td className="px-4 py-3 text-center">
                         <div className="d-flex gap-1 justify-content-center">
@@ -411,8 +532,7 @@ const EmployeeTable = () => {
                               width: "32px",
                               height: "32px"
                             }}
-                            onClick={() => handleDelete(emp.id)}
-                          >
+                            onClick={() => handleDelete(emp.Employee_Id)}                          >
                             <Trash2 size={14} />
                           </button>
                         </div>
@@ -481,113 +601,84 @@ const EmployeeTable = () => {
         </div>
       )}
 
-      {/* Add/Edit Modal */}
+      {/* Add/Edit Modal - NON-TRANSPARENT */}
       {showModal && (
-        <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+        <div 
+          className="modal show d-block" 
+          style={{ 
+            backgroundColor: 'rgba(0,0,0,0.8)',
+            zIndex: 1050
+          }}
+        >
           <div className="modal-dialog modal-lg modal-dialog-centered">
             <div 
               className="modal-content"
               style={{
-                background: "linear-gradient(135deg, #ffffff95, #3fe2cd08)",
-                border: "1px solid rgba(63, 226, 205, 0.2)",
-                borderRadius: "12px"
+                background: "#ffffff",
+                border: "2px solid #3fe2cd",
+                borderRadius: "12px",
+                boxShadow: "0 15px 35px rgba(0,0,0,0.3)"
               }}
             >
               <div 
-                className="modal-header border-0"
+                className="modal-header"
                 style={{
-                  background: "linear-gradient(135deg, #3fe2cd25, #ffffff60)",
-                  borderRadius: "12px 12px 0 0"
+                  background: "linear-gradient(135deg, #3fe2cd, #2c5f5d)",
+                  color: "white",
+                  borderRadius: "10px 10px 0 0",
+                  borderBottom: "none"
                 }}
               >
-                <h5 className="modal-title" style={{ color: "#2c5f5d" }}>
+                <h5 className="modal-title fw-bold">
                   {editingEmployee ? 'Edit Employee' : 'Add New Employee'}
                 </h5>
                 <button 
-                  className="btn-close" 
+                  className="btn-close btn-close-white" 
                   onClick={() => setShowModal(false)}
                 ></button>
               </div>
-              <div className="modal-body">
+              <div className="modal-body p-4" style={{ background: "#ffffff" }}>
                 <div className="row">
                   <div className="col-md-6">
                     <div className="mb-3">
-                      <label className="form-label" style={{ color: "#2c5f5d" }}>
-                        <User size={16} className="me-1" />
-                        First Name
-                      </label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        name="first_name"
-                        value={formData.first_name}
-                        onChange={handleChange}
-                        style={{
-                          background: "linear-gradient(to right, #ffffff80, #3fe2cd20)",
-                          border: "1px solid rgba(63, 226, 205, 0.3)",
-                          borderRadius: "8px"
-                        }}
-                      />
-                    </div>
-                  </div>
-                  <div className="col-md-6">
-                    <div className="mb-3">
-                      <label className="form-label" style={{ color: "#2c5f5d" }}>
-                        <User size={16} className="me-1" />
-                        Last Name
-                      </label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        name="last_name"
-                        value={formData.last_name}
-                        onChange={handleChange}
-                        style={{
-                          background: "linear-gradient(to right, #ffffff80, #3fe2cd20)",
-                          border: "1px solid rgba(63, 226, 205, 0.3)",
-                          borderRadius: "8px"
-                        }}
-                      />
-                    </div>
-                  </div>
-                </div>
-                <div className="row">
-                  <div className="col-md-6">
-                    <div className="mb-3">
-                      <label className="form-label" style={{ color: "#2c5f5d" }}>
+                      <label className="form-label fw-bold" style={{ color: "#2c5f5d" }}>
                         <IdCard size={16} className="me-1" />
-                        Employee ID
+                        Employee ID *
                       </label>
                       <input
                         type="text"
                         className="form-control"
-                        name="employee_id"
-                        value={formData.employee_id}
+                        name="Employee_Id"
+                        value={formData.Employee_Id}
                         onChange={handleChange}
+                        placeholder="Enter Employee ID"
+                        required
                         style={{
-                          background: "linear-gradient(to right, #ffffff80, #3fe2cd20)",
-                          border: "1px solid rgba(63, 226, 205, 0.3)",
-                          borderRadius: "8px"
+                          border: "2px solid #e9ecef",
+                          borderRadius: "8px",
+                          padding: "10px 12px"
                         }}
                       />
                     </div>
                   </div>
                   <div className="col-md-6">
                     <div className="mb-3">
-                      <label className="form-label" style={{ color: "#2c5f5d" }}>
-                        <Phone size={16} className="me-1" />
-                        Phone Number
+                      <label className="form-label fw-bold" style={{ color: "#2c5f5d" }}>
+                        <User size={16} className="me-1" />
+                        First Name *
                       </label>
                       <input
-                        type="tel"
+                        type="text"
                         className="form-control"
-                        name="phone"
-                        value={formData.phone}
+                        name="First_Name"
+                        value={formData.First_Name}
                         onChange={handleChange}
+                        placeholder="Enter First Name"
+                        required
                         style={{
-                          background: "linear-gradient(to right, #ffffff80, #3fe2cd20)",
-                          border: "1px solid rgba(63, 226, 205, 0.3)",
-                          borderRadius: "8px"
+                          border: "2px solid #e9ecef",
+                          borderRadius: "8px",
+                          padding: "10px 12px"
                         }}
                       />
                     </div>
@@ -596,89 +687,137 @@ const EmployeeTable = () => {
                 <div className="row">
                   <div className="col-md-6">
                     <div className="mb-3">
-                      <label className="form-label" style={{ color: "#2c5f5d" }}>
-                        <Calendar size={16} className="me-1" />
-                        Join Date
+                      <label className="form-label fw-bold" style={{ color: "#2c5f5d" }}>
+                        <User size={16} className="me-1" />
+                        Last Name *
                       </label>
                       <input
-                        type="date"
+                        type="text"
                         className="form-control"
-                        name="join_date"
-                        value={formData.join_date}
+                        name="Last_Name"
+                        value={formData.Last_Name}
                         onChange={handleChange}
+                        placeholder="Enter Last Name"
+                        required
                         style={{
-                          background: "linear-gradient(to right, #ffffff80, #3fe2cd20)",
-                          border: "1px solid rgba(63, 226, 205, 0.3)",
-                          borderRadius: "8px"
+                          border: "2px solid #e9ecef",
+                          borderRadius: "8px",
+                          padding: "10px 12px"
                         }}
                       />
                     </div>
                   </div>
                   <div className="col-md-6">
                     <div className="mb-3">
-                      <label className="form-label" style={{ color: "#2c5f5d" }}>
-                        <Briefcase size={16} className="me-1" />
-                        Role
-                      </label>
-                      <select
-                        className="form-select"
-                        name="role"
-                        value={formData.role}
-                        onChange={handleChange}
-                        style={{
-                          background: "linear-gradient(to right, #ffffff80, #3fe2cd20)",
-                          border: "1px solid rgba(63, 226, 205, 0.3)",
-                          borderRadius: "8px"
-                        }}
-                      >
-                        <option value="">Select Role</option>
-                        {roles.map(role => (
-                          <option key={role} value={role}>{role}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                </div>
-                <div className="row">
-                  <div className="col-md-6">
-                    <div className="mb-3">
-                      <label className="form-label" style={{ color: "#2c5f5d" }}>
+                      <label className="form-label fw-bold" style={{ color: "#2c5f5d" }}>
                         <Mail size={16} className="me-1" />
-                        Email Address
+                        Email Address *
                       </label>
                       <input
                         type="email"
                         className="form-control"
-                        name="email"
-                        value={formData.email}
+                        name="Email"
+                        value={formData.Email}
                         onChange={handleChange}
+                        placeholder="Enter Email Address"
+                        required
                         style={{
-                          background: "linear-gradient(to right, #ffffff80, #3fe2cd20)",
-                          border: "1px solid rgba(63, 226, 205, 0.3)",
-                          borderRadius: "8px"
+                          border: "2px solid #e9ecef",
+                          borderRadius: "8px",
+                          padding: "10px 12px"
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+                <div className="row">
+                  <div className="col-md-6">
+                    <div className="mb-3">
+                      <label className="form-label fw-bold" style={{ color: "#2c5f5d" }}>
+                        <Phone size={16} className="me-1" />
+                        Phone Number *
+                      </label>
+                      <input
+                        type="tel"
+                        className="form-control"
+                        name="Phone"
+                        value={formData.Phone}
+                        onChange={handleChange}
+                        placeholder="Enter Phone Number"
+                        required
+                        style={{
+                          border: "2px solid #e9ecef",
+                          borderRadius: "8px",
+                          padding: "10px 12px"
                         }}
                       />
                     </div>
                   </div>
                   <div className="col-md-6">
                     <div className="mb-3">
-                      <label className="form-label" style={{ color: "#2c5f5d" }}>
-                        Department
+                      <label className="form-label fw-bold" style={{ color: "#2c5f5d" }}>
+                        <MapPin size={16} className="me-1" />
+                        Address
+                      </label>
+                      <input
+                        type="text"
+                        className="form-control"
+                        name="Address"
+                        value={formData.Address}
+                        onChange={handleChange}
+                        placeholder="Enter Address"
+                        style={{
+                          border: "2px solid #e9ecef",
+                          borderRadius: "8px",
+                          padding: "10px 12px"
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+                <div className="row">
+                  <div className="col-md-6">
+                    <div className="mb-3">
+                      <label className="form-label fw-bold" style={{ color: "#2c5f5d" }}>
+                        <Calendar size={16} className="me-1" />
+                        Join Date *
+                      </label>
+                      <input
+                        type="date"
+                        className="form-control"
+                        name="Join_Date"
+                        value={formData.Join_Date}
+                        onChange={handleChange}
+                        required
+                        style={{
+                          border: "2px solid #e9ecef",
+                          borderRadius: "8px",
+                          padding: "10px 12px"
+                        }}
+                      />
+                    </div>
+                  </div>
+                  <div className="col-md-6">
+                    <div className="mb-3">
+                      <label className="form-label fw-bold" style={{ color: "#2c5f5d" }}>
+                        <Briefcase size={16} className="me-1" />
+                        Designation *
                       </label>
                       <select
                         className="form-select"
-                        name="department"
-                        value={formData.department}
+                        name="Designation"
+                        value={formData.Designation}
                         onChange={handleChange}
+                        required
                         style={{
-                          background: "linear-gradient(to right, #ffffff80, #3fe2cd20)",
-                          border: "1px solid rgba(63, 226, 205, 0.3)",
-                          borderRadius: "8px"
+                          border: "2px solid #e9ecef",
+                          borderRadius: "8px",
+                          padding: "10px 12px"
                         }}
                       >
-                        <option value="">Select Department</option>
-                        {departments.map(dept => (
-                          <option key={dept} value={dept}>{dept}</option>
+                        <option value="">Select Designation</option>
+                        {designations.map(designation => (
+                          <option key={designation} value={designation}>{designation}</option>
                         ))}
                       </select>
                     </div>
@@ -687,55 +826,91 @@ const EmployeeTable = () => {
                 <div className="row">
                   <div className="col-md-6">
                     <div className="mb-3">
-                      <label className="form-label" style={{ color: "#2c5f5d" }}>
-                        Salary
+                      <label className="form-label fw-bold" style={{ color: "#2c5f5d" }}>
+                        <DollarSign size={16} className="me-1" />
+                        Basic Salary
                       </label>
                       <input
-                        type="number"
+                        type="text"
                         className="form-control"
-                        name="salary"
-                        value={formData.salary}
+                        name="Basic_Salary"
+                        value={formData.Basic_Salary}
                         onChange={handleChange}
+                        placeholder="Enter Basic Salary"
                         style={{
-                          background: "linear-gradient(to right, #ffffff80, #3fe2cd20)",
-                          border: "1px solid rgba(63, 226, 205, 0.3)",
-                          borderRadius: "8px"
+                          border: "2px solid #e9ecef",
+                          borderRadius: "8px",
+                          padding: "10px 12px"
                         }}
                       />
                     </div>
                   </div>
                   <div className="col-md-6">
                     <div className="mb-3">
-                      <label className="form-label" style={{ color: "#2c5f5d" }}>
-                        Address
+                      <label className="form-label fw-bold" style={{ color: "#2c5f5d" }}>
+                        <Building2 size={16} className="me-1" />
+                        Department *
                       </label>
                       <select
                         className="form-select"
-                        name="Address"
-                        value={formData.status}
+                        name="Department_Id"
+                        value={formData.Department_Id}
                         onChange={handleChange}
+                        required
                         style={{
-                          background: "linear-gradient(to right, #ffffff80, #3fe2cd20)",
-                          border: "1px solid rgba(63, 226, 205, 0.3)",
-                          borderRadius: "8px"
+                          border: "2px solid #e9ecef",
+                          borderRadius: "8px",
+                          padding: "10px 12px"
                         }}
                       >
-                        <option value="Active">Active</option>
-                        <option value="Inactive">Inactive</option>
+                        <option value="">Select Department</option>
+                        {departments.map(dept => (
+                          <option key={dept.id} value={dept.id}>{dept.name}</option>
+                        ))}
                       </select>
                     </div>
                   </div>
                 </div>
+                <div className="row">
+                  <div className="col-md-12">
+                    <div className="mb-3">
+                      <label className="form-label fw-bold" style={{ color: "#2c5f5d" }}>
+                        <Image size={16} className="me-1" />
+                        Image Path
+                      </label>
+                      <input
+                        type="text"
+                        className="form-control"
+                        name="Image_Path"
+                        value={formData.Image_Path}
+                        onChange={handleChange}
+                        placeholder="Enter Image URL or Path"
+                        style={{
+                          border: "2px solid #e9ecef",
+                          borderRadius: "8px",
+                          padding: "10px 12px"
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div className="modal-footer border-0">
+              <div 
+                className="modal-footer" 
+                style={{ 
+                  background: "#f8f9fa",
+                  borderTop: "1px solid #dee2e6",
+                  borderRadius: "0 0 10px 10px"
+                }}
+              >
                 <button 
-                  className="btn"
+                  className="btn btn-secondary"
                   onClick={() => setShowModal(false)}
                   style={{
-                    background: "linear-gradient(45deg, #6c757d, #495057)",
-                    color: "white",
+                    background: "#6c757d",
                     border: "none",
-                    borderRadius: "8px"
+                    borderRadius: "8px",
+                    padding: "10px 20px"
                   }}
                 >
                   Cancel
@@ -747,10 +922,11 @@ const EmployeeTable = () => {
                     background: "linear-gradient(45deg, #3fe2cd, #2c5f5d)",
                     color: "white",
                     border: "none",
-                    borderRadius: "8px"
+                    borderRadius: "8px",
+                    padding: "10px 20px"
                   }}
                 >
-                  {editingEmployee ? 'Update' : 'Save'}
+                  {editingEmployee ? 'Update Employee' : 'Save Employee'}
                 </button>
               </div>
             </div>
@@ -758,54 +934,91 @@ const EmployeeTable = () => {
         </div>
       )}
 
-      {/* View Modal */}
+      {/* View Modal - NON-TRANSPARENT */}
       {showViewModal && viewingEmployee && (
-        <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+        <div 
+          className="modal show d-block" 
+          style={{ 
+            backgroundColor: 'rgba(0,0,0,0.8)',
+            zIndex: 1050
+          }}
+        >
           <div className="modal-dialog modal-lg modal-dialog-centered">
             <div 
               className="modal-content"
               style={{
-                background: "linear-gradient(135deg, #ffffff95, #3fe2cd08)",
-                border: "1px solid rgba(63, 226, 205, 0.2)",
-                borderRadius: "12px"
+                background: "#ffffff",
+                border: "2px solid #3fe2cd",
+                borderRadius: "12px",
+                boxShadow: "0 15px 35px rgba(0,0,0,0.3)"
               }}
             >
               <div 
-                className="modal-header border-0"
+                className="modal-header"
                 style={{
-                  background: "linear-gradient(135deg, #3fe2cd25, #ffffff60)",
-                  borderRadius: "12px 12px 0 0"
+                  background: "linear-gradient(135deg, #17a2b8, #20c997)",
+                  color: "white",
+                  borderRadius: "10px 10px 0 0",
+                  borderBottom: "none"
                 }}
               >
-                <h5 className="modal-title" style={{ color: "#2c5f5d" }}>
+                <h5 className="modal-title fw-bold">
                   Employee Details
                 </h5>
                 <button 
-                  className="btn-close" 
+                  className="btn-close btn-close-white" 
                   onClick={() => setShowViewModal(false)}
                 ></button>
               </div>
-              <div className="modal-body">
+              <div className="modal-body p-4" style={{ background: "#ffffff" }}>
+                {viewingEmployee.Image_Path && (
+                  <div className="text-center mb-4">
+                    <img 
+                      src={viewingEmployee.Image_Path} 
+                      alt="Employee" 
+                      className="rounded-circle"
+                      style={{
+                        width: "100px",
+                        height: "100px",
+                        objectFit: "cover",
+                        border: "3px solid #3fe2cd"
+                      }}
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                      }}
+                    />
+                  </div>
+                )}
                 <div className="row">
                   <div className="col-md-6">
                     <div className="mb-3">
                       <label className="form-label fw-bold" style={{ color: "#2c5f5d" }}>
-                        <User size={16} className="me-1" />
-                        Full Name
+                        <IdCard size={16} className="me-1" />
+                        Employee ID
                       </label>
-                      <p className="mb-0" style={{ color: "#5a6c6b" }}>
-                        {viewingEmployee.first_name} {viewingEmployee.last_name}
+                      <p className="mb-0 p-2" style={{ 
+                        color: "#5a6c6b", 
+                        background: "#f8f9fa",
+                        borderRadius: "6px",
+                        border: "1px solid #e9ecef"
+                      }}>
+                        {viewingEmployee.Employee_Id || 'N/A'}
                       </p>
                     </div>
                   </div>
                   <div className="col-md-6">
                     <div className="mb-3">
                       <label className="form-label fw-bold" style={{ color: "#2c5f5d" }}>
-                        <CreditCard size={16} className="me-1" />
-                        Employee ID
+                        <User size={16} className="me-1" />
+                        Full Name
                       </label>
-                      <p className="mb-0" style={{ color: "#5a6c6b" }}>
-                        {viewingEmployee.employee_id}
+                      <p className="mb-0 p-2" style={{ 
+                        color: "#5a6c6b", 
+                        background: "#f8f9fa",
+                        borderRadius: "6px",
+                        border: "1px solid #e9ecef"
+                      }}>
+                        {viewingEmployee.First_Name} {viewingEmployee.Last_Name}
                       </p>
                     </div>
                   </div>
@@ -817,8 +1030,13 @@ const EmployeeTable = () => {
                         <Mail size={16} className="me-1" />
                         Email
                       </label>
-                      <p className="mb-0" style={{ color: "#5a6c6b" }}>
-                        {viewingEmployee.email}
+                      <p className="mb-0 p-2" style={{ 
+                        color: "#5a6c6b", 
+                        background: "#f8f9fa",
+                        borderRadius: "6px",
+                        border: "1px solid #e9ecef"
+                      }}>
+                        {viewingEmployee.Email || 'N/A'}
                       </p>
                     </div>
                   </div>
@@ -828,8 +1046,47 @@ const EmployeeTable = () => {
                         <Phone size={16} className="me-1" />
                         Phone
                       </label>
-                      <p className="mb-0" style={{ color: "#5a6c6b" }}>
-                        {viewingEmployee.phone}
+                      <p className="mb-0 p-2" style={{ 
+                        color: "#5a6c6b", 
+                        background: "#f8f9fa",
+                        borderRadius: "6px",
+                        border: "1px solid #e9ecef"
+                      }}>
+                        {viewingEmployee.Phone || 'N/A'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <div className="row">
+                  <div className="col-md-6">
+                    <div className="mb-3">
+                      <label className="form-label fw-bold" style={{ color: "#2c5f5d" }}>
+                        <MapPin size={16} className="me-1" />
+                        Address
+                      </label>
+                      <p className="mb-0 p-2" style={{ 
+                        color: "#5a6c6b", 
+                        background: "#f8f9fa",
+                        borderRadius: "6px",
+                        border: "1px solid #e9ecef"
+                      }}>
+                        {viewingEmployee.Address || 'N/A'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="col-md-6">
+                    <div className="mb-3">
+                      <label className="form-label fw-bold" style={{ color: "#2c5f5d" }}>
+                        <Calendar size={16} className="me-1" />
+                        Join Date
+                      </label>
+                      <p className="mb-0 p-2" style={{ 
+                        color: "#5a6c6b", 
+                        background: "#f8f9fa",
+                        borderRadius: "6px",
+                        border: "1px solid #e9ecef"
+                      }}>
+                        {viewingEmployee.Join_Date ? new Date(viewingEmployee.Join_Date).toLocaleDateString() : 'N/A'}
                       </p>
                     </div>
                   </div>
@@ -839,20 +1096,31 @@ const EmployeeTable = () => {
                     <div className="mb-3">
                       <label className="form-label fw-bold" style={{ color: "#2c5f5d" }}>
                         <Briefcase size={16} className="me-1" />
-                        Role
+                        Designation
                       </label>
-                      <p className="mb-0" style={{ color: "#5a6c6b" }}>
-                        {viewingEmployee.role}
+                      <p className="mb-0 p-2" style={{ 
+                        color: "#5a6c6b", 
+                        background: "#f8f9fa",
+                        borderRadius: "6px",
+                        border: "1px solid #e9ecef"
+                      }}>
+                        {viewingEmployee.Designation || 'N/A'}
                       </p>
                     </div>
                   </div>
                   <div className="col-md-6">
                     <div className="mb-3">
                       <label className="form-label fw-bold" style={{ color: "#2c5f5d" }}>
+                        <Building2 size={16} className="me-1" />
                         Department
                       </label>
-                      <p className="mb-0" style={{ color: "#5a6c6b" }}>
-                        {viewingEmployee.department}
+                      <p className="mb-0 p-2" style={{ 
+                        color: "#5a6c6b", 
+                        background: "#f8f9fa",
+                        borderRadius: "6px",
+                        border: "1px solid #e9ecef"
+                      }}>
+                        {getDepartmentName(viewingEmployee.Department_Id)}
                       </p>
                     </div>
                   </div>
@@ -861,54 +1129,38 @@ const EmployeeTable = () => {
                   <div className="col-md-6">
                     <div className="mb-3">
                       <label className="form-label fw-bold" style={{ color: "#2c5f5d" }}>
-                        <Calendar size={16} className="me-1" />
-                        Join Date
+                        <DollarSign size={16} className="me-1" />
+                        Basic Salary
                       </label>
-                      <p className="mb-0" style={{ color: "#5a6c6b" }}>
-                        {new Date(viewingEmployee.join_date).toLocaleDateString()}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="col-md-6">
-                    <div className="mb-3">
-                      <label className="form-label fw-bold" style={{ color: "#2c5f5d" }}>
-                        Status
-                      </label>
-                      <p className="mb-0">
-                        <span 
-                          className={`badge ${viewingEmployee.status === 'Active' ? 'bg-success' : 'bg-secondary'}`}
-                          style={{ borderRadius: "20px" }}
-                        >
-                          {viewingEmployee.status}
-                        </span>
+                      <p className="mb-0 p-2" style={{ 
+                        color: "#5a6c6b", 
+                        background: "#f8f9fa",
+                        borderRadius: "6px",
+                        border: "1px solid #e9ecef"
+                      }}>
+                        {viewingEmployee.Basic_Salary ? `₹${parseInt(viewingEmployee.Basic_Salary).toLocaleString()}` : 'N/A'}
                       </p>
                     </div>
                   </div>
                 </div>
-                {viewingEmployee.salary && (
-                  <div className="row">
-                    <div className="col-md-6">
-                      <div className="mb-3">
-                        <label className="form-label fw-bold" style={{ color: "#2c5f5d" }}>
-                          Salary
-                        </label>
-                        <p className="mb-0" style={{ color: "#5a6c6b" }}>
-                          ₹{viewingEmployee.salary}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
               </div>
-              <div className="modal-footer border-0">
+              <div 
+                className="modal-footer" 
+                style={{ 
+                  background: "#f8f9fa",
+                  borderTop: "1px solid #dee2e6",
+                  borderRadius: "0 0 10px 10px"
+                }}
+              >
                 <button 
                   className="btn"
                   onClick={() => setShowViewModal(false)}
                   style={{
-                    background: "linear-gradient(45deg, #3fe2cd, #2c5f5d)",
+                    background: "linear-gradient(45deg, #17a2b8, #20c997)",
                     color: "white",
                     border: "none",
-                    borderRadius: "8px"
+                    borderRadius: "8px",
+                    padding: "10px 20px"
                   }}
                 >
                   Close
