@@ -2,16 +2,75 @@ import React, { useState } from 'react';
 import { 
   Home, Users, UserPlus, Calendar, DollarSign, Clock, 
   FileText, BarChart3, Settings, Shield, LogOut, 
-  ChevronDown, ChevronRight, Menu, X 
+  ChevronDown, ChevronRight, Menu, X, Plus, UserCircle 
 } from 'lucide-react';
-import EmployeeTable from '../Components/EmployeeTable'
+// Import your existing EmployeeTable component
+import EmployeeTable from '../Components/EmployeeTable';
+import DepartmentTable from '../Components/DepartmentTable'
+// Dashboard Component
+const Dashboard = () => {
+  return (
+    <div>
+      <div className="row mb-4">
+        <div className="col-md-3 mb-3">
+          <div className="card bg-primary text-white">
+            <div className="card-body">
+              <h5>Total Employees</h5>
+              <h2>156</h2>
+            </div>
+          </div>
+        </div>
+        <div className="col-md-3 mb-3">
+          <div className="card bg-success text-white">
+            <div className="card-body">
+              <h5>Present Today</h5>
+              <h2>142</h2>
+            </div>
+          </div>
+        </div>
+        <div className="col-md-3 mb-3">
+          <div className="card bg-warning text-white">
+            <div className="card-body">
+              <h5>On Leave</h5>
+              <h2>14</h2>
+            </div>
+          </div>
+        </div>
+        <div className="col-md-3 mb-3">
+          <div className="card bg-info text-white">
+            <div className="card-body">
+              <h5>New Hires</h5>
+              <h2>8</h2>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div className="bg-white rounded shadow-sm p-4">
+        <h4>Dashboard Overview</h4>
+        <p>Welcome to the HRM System Dashboard. Here you can view all the important metrics and information.</p>
+      </div>
+    </div>
+  );
+};
+
+// Generic Component for other pages
+const GenericPage = ({ title }) => {
+  return (
+    <div className="bg-white rounded shadow-sm p-4">
+      <h4>{title}</h4>
+      <p>This is the {title.toLowerCase()} page. Content will be implemented here.</p>
+      <div className="alert alert-info">
+        <strong>Coming Soon!</strong> This feature is under development.
+      </div>
+    </div>
+  );
+};
 
 const Sidebar = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [expandedMenus, setExpandedMenus] = useState({});
   const [activeMenu, setActiveMenu] = useState('dashboard');
-  const [userRole, setUserRole] = useState('admin'); // admin, hr, employee, manager
-
+  const [userRole, setUserRole] = useState('admin');
 
   // Role-based menu configuration
   const menuItems = {
@@ -21,7 +80,7 @@ const Sidebar = () => {
         title: 'Dashboard',
         icon: Home,
         path: '/dashboard',
-        component: 'Dashboard.js'
+        component: 'Dashboard'
       },
       {
         id: 'employees',
@@ -30,11 +89,10 @@ const Sidebar = () => {
         path: '/Employee',
         hasSubmenu: true,
         submenu: [
-          { id: 'all-employees', title: 'All Employees', path: '/employees', component: 'AllEmployees.js' },
-          { id: 'add-employee', title: 'Add Employee', path: '/employees/add', component: 'AddEmployee.js' },
-          { id: 'employee-profiles', title: 'Employee Profiles', path: '/employees/profiles', component: 'EmployeeProfiles.js' },
-          { id: 'departments', title: 'Departments', path: '/departments', component: 'Departments.js' },
-
+          { id: 'all-employees', title: 'All Employees', path: '/employees', component: 'EmployeeTable' },
+          { id: 'add-employee', title: 'Add Employee', path: '/employees/add', component: 'EmployeeTable' },
+          { id: 'employee-profiles', title: 'Employee Profiles', path: '/employees/profiles', component: 'EmployeeTable' },
+          { id: 'departments', title: 'Departments', path: '/Department', component: 'DepartmentTable' },
         ]
       },
       {
@@ -43,9 +101,9 @@ const Sidebar = () => {
         icon: UserPlus,
         hasSubmenu: true,
         submenu: [
-          { id: 'job-postings', title: 'Job Postings', path: '/recruitment/jobs', component: 'JobPostings.js' },
-          { id: 'applications', title: 'Applications', path: '/recruitment/applications', component: 'Applications.js' },
-          { id: 'interviews', title: 'Interviews', path: '/recruitment/interviews', component: 'Interviews.js' }
+          { id: 'job-postings', title: 'Job Postings', path: '/recruitment/jobs', component: 'JobPostings' },
+          { id: 'applications', title: 'Applications', path: '/recruitment/applications', component: 'Applications' },
+          { id: 'interviews', title: 'Interviews', path: '/recruitment/interviews', component: 'Interviews' }
         ]
       },
       {
@@ -54,10 +112,10 @@ const Sidebar = () => {
         icon: Clock,
         hasSubmenu: true,
         submenu: [
-          { id: 'daily-attendance', title: 'Daily Attendance', path: '/attendance/daily', component: 'DailyAttendance.js' },
-          { id: 'monthly-report', title: 'Monthly Reports', path: '/attendance/monthly', component: 'MonthlyAttendance.js' },
-          { id: 'leave-management', title: 'Leave Management', path: '/attendance/leaves', component: 'LeaveManagement.js' },
-          { id: 'overtime', title: 'Overtime Tracking', path: '/attendance/overtime', component: 'OvertimeTracking.js' }
+          { id: 'daily-attendance', title: 'Daily Attendance', path: '/attendance/daily', component: 'DailyAttendance' },
+          { id: 'monthly-report', title: 'Monthly Reports', path: '/attendance/monthly', component: 'MonthlyAttendance' },
+          { id: 'leave-management', title: 'Leave Management', path: '/attendance/leaves', component: 'LeaveManagement' },
+          { id: 'overtime', title: 'Overtime Tracking', path: '/attendance/overtime', component: 'OvertimeTracking' }
         ]
       },
       {
@@ -66,10 +124,10 @@ const Sidebar = () => {
         icon: DollarSign,
         hasSubmenu: true,
         submenu: [
-          { id: 'salary-structure', title: 'Salary Structure', path: '/payroll/structure', component: 'SalaryStructure.js' },
-          { id: 'payroll-processing', title: 'Payroll Processing', path: '/payroll/processing', component: 'PayrollProcessing.js' },
-          { id: 'payslips', title: 'Pay Slips', path: '/payroll/payslips', component: 'PaySlips.js' },
-          { id: 'tax-management', title: 'Tax Management', path: '/payroll/tax', component: 'TaxManagement.js' }
+          { id: 'salary-structure', title: 'Salary Structure', path: '/payroll/structure', component: 'SalaryStructure' },
+          { id: 'payroll-processing', title: 'Payroll Processing', path: '/payroll/processing', component: 'PayrollProcessing' },
+          { id: 'payslips', title: 'Pay Slips', path: '/payroll/payslips', component: 'PaySlips' },
+          { id: 'tax-management', title: 'Tax Management', path: '/payroll/tax', component: 'TaxManagement' }
         ]
       },
       {
@@ -78,9 +136,9 @@ const Sidebar = () => {
         icon: BarChart3,
         hasSubmenu: true,
         submenu: [
-          { id: 'appraisals', title: 'Appraisals', path: '/performance/appraisals', component: 'Appraisals.js' },
-          { id: 'goals', title: 'Goals & KPIs', path: '/performance/goals', component: 'Goals.js' },
-          { id: 'reviews', title: 'Performance Reviews', path: '/performance/reviews', component: 'PerformanceReviews.js' }
+          { id: 'appraisals', title: 'Appraisals', path: '/performance/appraisals', component: 'Appraisals' },
+          { id: 'goals', title: 'Goals & KPIs', path: '/performance/goals', component: 'Goals' },
+          { id: 'reviews', title: 'Performance Reviews', path: '/performance/reviews', component: 'PerformanceReviews' }
         ]
       },
       {
@@ -89,10 +147,10 @@ const Sidebar = () => {
         icon: FileText,
         hasSubmenu: true,
         submenu: [
-          { id: 'employee-reports', title: 'Employee Reports', path: '/reports/employees', component: 'EmployeeReports.js' },
-          { id: 'attendance-reports', title: 'Attendance Reports', path: '/reports/attendance', component: 'AttendanceReports.js' },
-          { id: 'payroll-reports', title: 'Payroll Reports', path: '/reports/payroll', component: 'PayrollReports.js' },
-          { id: 'analytics', title: 'HR Analytics', path: '/reports/analytics', component: 'HRAnalytics.js' }
+          { id: 'employee-reports', title: 'Employee Reports', path: '/reports/employees', component: 'EmployeeReports' },
+          { id: 'attendance-reports', title: 'Attendance Reports', path: '/reports/attendance', component: 'AttendanceReports' },
+          { id: 'payroll-reports', title: 'Payroll Reports', path: '/reports/payroll', component: 'PayrollReports' },
+          { id: 'analytics', title: 'HR Analytics', path: '/reports/analytics', component: 'HRAnalytics' }
         ]
       },
       {
@@ -101,9 +159,9 @@ const Sidebar = () => {
         icon: Settings,
         hasSubmenu: true,
         submenu: [
-          { id: 'company-settings', title: 'Company Settings', path: '/settings/company', component: 'CompanySettings.js' },
-          { id: 'user-roles', title: 'User Roles', path: '/settings/roles', component: 'UserRoles.js' },
-          { id: 'permissions', title: 'Permissions', path: '/settings/permissions', component: 'Permissions.js' }
+          { id: 'company-settings', title: 'Company Settings', path: '/settings/company', component: 'CompanySettings' },
+          { id: 'user-roles', title: 'User Roles', path: '/settings/roles', component: 'UserRoles' },
+          { id: 'permissions', title: 'Permissions', path: '/settings/permissions', component: 'Permissions' }
         ]
       }
     ],
@@ -113,7 +171,7 @@ const Sidebar = () => {
         title: 'HR Dashboard',
         icon: Home,
         path: '/hr-dashboard',
-        component: 'HRDashboard.js'
+        component: 'HRDashboard'
       },
       {
         id: 'employees',
@@ -121,9 +179,9 @@ const Sidebar = () => {
         icon: Users,
         hasSubmenu: true,
         submenu: [
-          { id: 'all-employees', title: 'All Employees', path: '/employees', component: 'AllEmployees.js' },
-          { id: 'add-employee', title: 'Add Employee', path: '/employees/add', component: 'AddEmployee.js' },
-          { id: 'employee-profiles', title: 'Employee Profiles', path: '/employees/profiles', component: 'EmployeeProfiles.js' }
+          { id: 'all-employees', title: 'All Employees', path: '/employees', component: 'EmployeeTable' },
+          { id: 'add-employee', title: 'Add Employee', path: '/employees/add', component: 'EmployeeTable' },
+          { id: 'employee-profiles', title: 'Employee Profiles', path: '/employees/profiles', component: 'EmployeeTable' }
         ]
       },
       {
@@ -132,9 +190,9 @@ const Sidebar = () => {
         icon: UserPlus,
         hasSubmenu: true,
         submenu: [
-          { id: 'job-postings', title: 'Job Postings', path: '/recruitment/jobs', component: 'JobPostings.js' },
-          { id: 'applications', title: 'Applications', path: '/recruitment/applications', component: 'Applications.js' },
-          { id: 'interviews', title: 'Interviews', path: '/recruitment/interviews', component: 'Interviews.js' }
+          { id: 'job-postings', title: 'Job Postings', path: '/recruitment/jobs', component: 'JobPostings' },
+          { id: 'applications', title: 'Applications', path: '/recruitment/applications', component: 'Applications' },
+          { id: 'interviews', title: 'Interviews', path: '/recruitment/interviews', component: 'Interviews' }
         ]
       },
       {
@@ -143,8 +201,8 @@ const Sidebar = () => {
         icon: Clock,
         hasSubmenu: true,
         submenu: [
-          { id: 'daily-attendance', title: 'Daily Attendance', path: '/attendance/daily', component: 'DailyAttendance.js' },
-          { id: 'leave-requests', title: 'Leave Requests', path: '/attendance/leave-requests', component: 'LeaveRequests.js' }
+          { id: 'daily-attendance', title: 'Daily Attendance', path: '/attendance/daily', component: 'DailyAttendance' },
+          { id: 'leave-requests', title: 'Leave Requests', path: '/attendance/leave-requests', component: 'LeaveRequests' }
         ]
       }
     ],
@@ -154,7 +212,7 @@ const Sidebar = () => {
         title: 'Manager Dashboard',
         icon: Home,
         path: '/manager-dashboard',
-        component: 'ManagerDashboard.js'
+        component: 'ManagerDashboard'
       },
       {
         id: 'team',
@@ -162,8 +220,8 @@ const Sidebar = () => {
         icon: Users,
         hasSubmenu: true,
         submenu: [
-          { id: 'team-members', title: 'Team Members', path: '/team/members', component: 'TeamMembers.js' },
-          { id: 'team-attendance', title: 'Team Attendance', path: '/team/attendance', component: 'TeamAttendance.js' }
+          { id: 'team-members', title: 'Team Members', path: '/team/members', component: 'TeamMembers' },
+          { id: 'team-attendance', title: 'Team Attendance', path: '/team/attendance', component: 'TeamAttendance' }
         ]
       },
       {
@@ -172,8 +230,8 @@ const Sidebar = () => {
         icon: BarChart3,
         hasSubmenu: true,
         submenu: [
-          { id: 'team-performance', title: 'Team Performance', path: '/performance/team', component: 'TeamPerformance.js' },
-          { id: 'appraisals', title: 'Appraisals', path: '/performance/appraisals', component: 'Appraisals.js' }
+          { id: 'team-performance', title: 'Team Performance', path: '/performance/team', component: 'TeamPerformance' },
+          { id: 'appraisals', title: 'Appraisals', path: '/performance/appraisals', component: 'Appraisals' }
         ]
       }
     ],
@@ -183,14 +241,14 @@ const Sidebar = () => {
         title: 'My Dashboard',
         icon: Home,
         path: '/employee-dashboard',
-        component: 'EmployeeDashboard.js'
+        component: 'EmployeeDashboard'
       },
       {
         id: 'profile',
         title: 'My Profile',
         icon: Users,
         path: '/profile',
-        component: 'MyProfile.js'
+        component: 'MyProfile'
       },
       {
         id: 'attendance',
@@ -198,9 +256,9 @@ const Sidebar = () => {
         icon: Clock,
         hasSubmenu: true,
         submenu: [
-          { id: 'check-in-out', title: 'Check In/Out', path: '/attendance/checkin', component: 'CheckInOut.js' },
-          { id: 'my-attendance', title: 'Attendance History', path: '/attendance/history', component: 'AttendanceHistory.js' },
-          { id: 'leave-request', title: 'Leave Request', path: '/attendance/leave-request', component: 'LeaveRequest.js' }
+          { id: 'check-in-out', title: 'Check In/Out', path: '/attendance/checkin', component: 'CheckInOut' },
+          { id: 'my-attendance', title: 'Attendance History', path: '/attendance/history', component: 'AttendanceHistory' },
+          { id: 'leave-request', title: 'Leave Request', path: '/attendance/leave-request', component: 'LeaveRequest' }
         ]
       },
       {
@@ -209,8 +267,8 @@ const Sidebar = () => {
         icon: DollarSign,
         hasSubmenu: true,
         submenu: [
-          { id: 'payslips', title: 'My Pay Slips', path: '/payroll/my-payslips', component: 'MyPaySlips.js' },
-          { id: 'tax-documents', title: 'Tax Documents', path: '/payroll/tax-docs', component: 'TaxDocuments.js' }
+          { id: 'payslips', title: 'My Pay Slips', path: '/payroll/my-payslips', component: 'MyPaySlips' },
+          { id: 'tax-documents', title: 'Tax Documents', path: '/payroll/tax-docs', component: 'TaxDocuments' }
         ]
       }
     ]
@@ -229,6 +287,49 @@ const Sidebar = () => {
     } else {
       setActiveMenu(menuId);
     }
+  };
+
+  const handleSubmenuClick = (submenuId) => {
+    setActiveMenu(submenuId);
+  };
+
+  const handleRoleChange = (newRole) => {
+    setUserRole(newRole);
+    // Reset active menu to dashboard when role changes
+    setActiveMenu('dashboard');
+    // Close all expanded menus
+    setExpandedMenus({});
+  };
+
+  const renderContent = () => {
+    // Handle dashboard rendering for different roles
+    if (activeMenu === 'dashboard') {
+      return <Dashboard />;
+    }
+
+    // Handle Employee Management submenu items
+    if (['all-employees', 'add-employee', 'employee-profiles'].includes(activeMenu)) {
+      return <EmployeeTable />;
+
+    }
+    if(activeMenu === 'departments'){
+      return <DepartmentTable/>
+    }
+
+    // For other menu items, show generic page
+    const allMenuItems = Object.values(menuItems).flat();
+    const allSubmenuItems = allMenuItems
+      .filter(item => item.hasSubmenu)
+      .flatMap(item => item.submenu);
+    
+    const currentMenuItem = allMenuItems.find(item => item.id === activeMenu) ||
+                            allSubmenuItems.find(item => item.id === activeMenu);
+    
+    if (currentMenuItem) {
+      return <GenericPage title={currentMenuItem.title} />;
+    }
+
+    return <GenericPage title="Page Not Found" />;
   };
 
   const MenuItem = ({ item, level = 0 }) => {
@@ -258,9 +359,24 @@ const Sidebar = () => {
 
         {item.hasSubmenu && isExpanded && !isCollapsed && (
           <div className="ms-3">
-            {item.submenu.map(subItem => (
-              <MenuItem key={subItem.id} item={subItem} level={level + 1} />
-            ))}
+            {item.submenu.map(subItem => {
+              const isSubActive = activeMenu === subItem.id;
+              return (
+                <div
+                  key={subItem.id}
+                  className={`d-flex align-items-center p-2 rounded cursor-pointer transition-all ms-3 ${
+                    isSubActive ? 'bg-primary text-white' : 'text-secondary hover-bg-light'
+                  }`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleSubmenuClick(subItem.id);
+                  }}
+                  style={{ cursor: 'pointer', paddingLeft: '2rem' }}
+                >
+                  <span>{subItem.title}</span>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
@@ -298,14 +414,14 @@ const Sidebar = () => {
           </button>
         </div>
 
-        {/* Role Selector (Demo) */}
+        {/* Role Selector */}
         {!isCollapsed && (
           <div className="p-3 border-bottom">
             <label className="form-label small text-muted">Current Role:</label>
             <select
               className="form-select form-select-sm"
               value={userRole}
-              onChange={(e) => setUserRole(e.target.value)}
+              onChange={(e) => handleRoleChange(e.target.value)}
             >
               <option value="admin">Admin</option>
               <option value="hr">HR Manager</option>
@@ -340,10 +456,10 @@ const Sidebar = () => {
           padding: '20px'
         }}
       >
-        <div className="container-fluid z-1">
+        <div className="container-fluid">
           <div className="row">
             <div className="col-12">
-              <EmployeeTable/>
+              {renderContent()}
             </div>
           </div>
         </div>

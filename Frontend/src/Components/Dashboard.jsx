@@ -1,7 +1,5 @@
 import { useState } from 'react';
-import { Container, Row, Col } from 'react-bootstrap';
 import Sidebar from './Sidebar';
-import DashboardCard from './DashboardCard';
 import NavbarTop from './NavbarApp';
 import React from 'react';
 

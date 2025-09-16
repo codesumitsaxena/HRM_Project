@@ -5,6 +5,9 @@ import {
   Calendar, User, IdCard, Briefcase, MapPin,
   DollarSign, Building2, Image
 } from 'lucide-react';
+import * as XLSX from "xlsx";
+import { saveAs } from "file-saver";
+ 
 
 const EmployeeTable = () => {
   const [employees, setEmployees] = useState([]);
@@ -51,6 +54,16 @@ const EmployeeTable = () => {
     Department_Id: '',
     Image_Path: ''
   });
+
+  const exportToExcel = () => {
+    const worksheet = XLSX.utils.json_to_sheet(employees);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Employees");
+    const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
+    const fileData = new Blob([excelBuffer], { type: "application/octet-stream" });
+    saveAs(fileData, "employeeTable.xlsx");
+  };
+
 
   const departments = [
     { id: 'DEPT001', name: 'IT' },
@@ -268,6 +281,7 @@ const EmployeeTable = () => {
                   border: "none",
                   borderRadius: "8px"
                 }}
+                onClick={exportToExcel} 
               >
                 <Download size={16} className="me-1" />
                 Export
