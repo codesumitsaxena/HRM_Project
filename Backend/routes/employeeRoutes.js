@@ -1,7 +1,13 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const { getEmployees, createEmployee } = require('../controllers/employeeController');
+const employeeController = require("../controllers/employeeController");
+const authenticate = require("../middleware/authMiddleware"); // import middleware
 
-router.get('/', getEmployees); 
+// Protected routes
+router.get("/", authenticate, employeeController.getAllEmployees);
+router.get("/:id", authenticate, employeeController.getEmployeeById);
+router.post("/", authenticate, employeeController.createEmployee);
+router.put("/:id", authenticate, employeeController.updateEmployee);
+router.delete("/:id", authenticate, employeeController.deleteEmployee);
 
 module.exports = router;

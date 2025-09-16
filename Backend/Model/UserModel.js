@@ -1,25 +1,29 @@
-const db = require('../config/db'); // MySQL connection file
+// backend/Model/UserModel.js
+const db = require('../config/db');
 
-// 🔍 Find user by email
-exports.findUserByEmail = (email, callback) => {
-  const sql = 'SELECT * FROM users WHERE email = ?';
-  db.query(sql, [email], (err, results) => {
-    if (err) {
-      console.error("DB ERROR in findUserByEmail:", err);
-      return callback(err, null);
-    }
-    return callback(null, results);
-  });
+// Create new user
+exports.createUser = async ({ Full_Name, Email, Password, Role = 'user', Employee_Id = null }) => {
+  const [result] = await db.query(
+    'INSERT INTO users (Full_Name, Email, Password, Role, Employee_Id) VALUES (?, ?, ?, ?, ?)',
+    [Full_Name, Email, Password, Role, Employee_Id]
+  );
+  return result.insertId;
 };
 
-// 🧾 Create new user
-exports.createUser = (name, email, hashedPassword, callback) => {
-  const sql = 'INSERT INTO users (name, email, password) VALUES (?, ?, ?)';
-  db.query(sql, [name, email, hashedPassword], (err, result) => {
-    if (err) {
-      console.error("DB ERROR in createUser:", err);
-      return callback(err, null);
-    }
-    return callback(null, result);
-  });
+// Find user by email
+exports.findUserByEmail = async (Email) => {
+  const [rows] = await db.query(
+    'SELECT * FROM users WHERE Email = ? LIMIT 1',
+    [Email]
+  );
+  return rows[0] || null;
+};
+
+// Find user by ID
+exports.findUserById = async (User_Id) => {
+  const [rows] = await db.query(
+    'SELECT User_Id, Full_Name, Email, Role, Employee_Id FROM users WHERE User_Id = ? LIMIT 1',
+    [User_Id]
+  );
+  return rows[0] || null;
 };

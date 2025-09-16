@@ -1,21 +1,40 @@
-const express = require('express');
-const cors = require('cors');
-const dotenv = require('dotenv');
-const authRoutes = require('./routes/auth');
-require('dotenv').config();
+const express = require("express");
+const cors = require("cors");
+const bodyParser = require("body-parser");
+const dotenv = require("dotenv");
 
-dotenv.config();
+dotenv.config();  
+
+const authRoutes = require("./routes/authRoutes");
+const departmentRoutes = require("./routes/departmentRoutes");
+const employeeRoutes = require("./routes/employeeRoutes");
+const leaveRoutes = require("./routes/LeaveRequestRoutes");
+
 const app = express();
 
 // Middleware
-app.use(express.json());
-app.use(cors({ origin: '*' })); // Allow all origins for testing
+app.use(cors());
+app.use(bodyParser.json());
 
-// Routes
-app.use('/api/auth', authRoutes);
-
-// Start server (listen on all network interfaces)
-app.listen(process.env.PORT || 3000, '122.161.76.148', () => {
-  console.log(`🚀 Server running on port ${process.env.PORT || 3000}`);
+// Root route
+app.get("/", (req, res) => {
+  res.send("✅ HRM Backend is running");
 });
 
+// Routes
+app.use("/api/auth", authRoutes);
+app.use("/api/departments", departmentRoutes);
+app.use("/api/employee", employeeRoutes);       // 🔹 Changed to lowercase for consistency
+app.use("/api/leave_request", leaveRoutes);     // 🔹 Changed to lowercase & hyphen
+
+// Error handling middleware (optional but good practice)
+app.use((err, req, res, next) => {
+  console.error("❌ Server Error:", err.stack);
+  res.status(500).json({ message: "Something went wrong" });
+});
+
+// Start server
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on http://localhost:${PORT}`);
+});

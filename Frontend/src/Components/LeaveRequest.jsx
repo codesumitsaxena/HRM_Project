@@ -1,3 +1,4 @@
+// LeaveRequest.jsx - Updated with CSS for fixed width
 import React, { useEffect, useState } from "react";
 import {
   Container,
@@ -8,315 +9,557 @@ import {
   Form,
   Modal,
   Spinner,
+  InputGroup,
+  FormControl,
 } from "react-bootstrap";
-import Pagination from "@mui/material/Pagination";
-import PaginationItem from "@mui/material/PaginationItem";
-import Stack from "@mui/material/Stack";
-import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
+import api from "../api"; // ✅ Use centralized API
+import './LeaveRequest.css'; // ✅ Add this line
 
-const LeaveRequest = () => {
+export default function LeaveRequest() {
   const [leaveData, setLeaveData] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
   const [showModal, setShowModal] = useState(false);
+  const [editingLeave, setEditingLeave] = useState(null); // Consistent naming
+  const [validated, setValidated] = useState(false);
+  const [isLoading, setIsLoading] = useState(false); // Used for modal save button
+  const [isTableLoading, setIsTableLoading] = useState(false); // Used for table data loading
   const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
-    employeeId: "",
-    leaveType: "",
-    fromDate: "",
-    toDate: "",
-    reason: "",
+    First_Name: "",
+    Last_Name: "",
+    Employee_Id: "",
+    Leave_Type: "Casual Leave",
+    Start_Date: "",
+    End_Date: "",
+    Reason: "",
   });
 
-  const itemsPerPage = 8;
+  // Backend pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pagination, setPagination] = useState({
+    totalPages: 0,
+    totalItems: 0,
+    hasNext: false,
+    hasPrevious: false,
+    limit: 10,
+  });
+
+  // Debounce search
+  const [searchDebounce, setSearchDebounce] = useState("");
 
   useEffect(() => {
-    const loadData = async () => {
-      const dummy = [
-        {
-          id: 1,
-          name: "Marshall Nichols",
-          employeeId: "LA-0215",
-          leaveType: "Casual Leave",
-          fromDate: "2024-07-24",
-          toDate: "2024-07-26",
-          reason: "Family Function",
-        },
-        {
-          id: 2,
-          name: "Maryam Amiri",
-          employeeId: "LA-0216",
-          leaveType: "Medical Leave",
-          fromDate: "2024-07-20",
-          toDate: "2024-07-22",
-          reason: "Birthday Party",
-        },
-      ];
-      setLeaveData(dummy);
-      setLoading(false);
-    };
-    loadData();
-  }, []);
+    const timer = setTimeout(() => {
+      setSearchDebounce(search);
+      setCurrentPage(1); // Reset to page 1 when search changes
+    }, 500);
 
-  const filteredData = leaveData.filter((item) =>
-    item.name.toLowerCase().includes(search.toLowerCase())
-  );
+    return () => clearTimeout(timer);
+  }, [search]);
 
-  const displayedData = filteredData.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  useEffect(() => {
+    fetchLeaves(currentPage, searchDebounce);
+  }, [currentPage, searchDebounce]);
 
-  const openModal = (data = null) => {
-    if (data) {
-      const [firstName, lastName] = data.name.split(" ");
-      setFormData({
-        id: data.id,
-        firstName,
-        lastName,
-        employeeId: data.employeeId,
-        leaveType: data.leaveType,
-        fromDate: data.fromDate,
-        toDate: data.toDate,
-        reason: data.reason,
+  const fetchLeaves = async (page = 1, searchTerm = "") => {
+    setIsTableLoading(true);
+    try {
+      const params = {
+        page,
+        limit: 10,
+        ...(searchTerm && { search: searchTerm }),
+      };
+
+      const res = await api.get("/Leave_Request", { params });
+      setLeaveData(res.data.data);
+      setPagination(res.data.pagination);
+    } catch (error) {
+      console.error("Error fetching leave requests:", error);
+
+      if (error.response && error.response.data) {
+        alert(error.response.data.message || "Failed to load leave requests");
+      } else {
+        alert("Something went wrong while loading leave requests. Please try again.");
+      }
+
+      setLeaveData([]);
+      setPagination({
+        totalPages: 0,
+        totalItems: 0,
+        hasNext: false,
+        hasPrevious: false,
+        limit: 10,
       });
-    } else {
-      setFormData({
-        firstName: "",
-        lastName: "",
-        employeeId: "",
-        leaveType: "",
-        fromDate: "",
-        toDate: "",
-        reason: "",
-      });
+    } finally {
+      setIsTableLoading(false);
     }
-    setShowModal(true);
-  };
-
-  const closeModal = () => {
-    setShowModal(false);
-    setFormData(null);
-  };
-
-  const saveData = () => {
-    const fullName = `${formData.firstName} ${formData.lastName}`;
-    const newEntry = {
-      id: formData.id || Date.now(),
-      name: fullName,
-      employeeId: formData.employeeId,
-      leaveType: formData.leaveType,
-      fromDate: formData.fromDate,
-      toDate: formData.toDate,
-      reason: formData.reason,
-    };
-
-    if (formData.id) {
-      setLeaveData((prev) =>
-        prev.map((item) => (item.id === formData.id ? newEntry : item))
-      );
-    } else {
-      setLeaveData((prev) => [...prev, newEntry]);
-    }
-    closeModal();
   };
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const deleteData = (id) => {
-    if (window.confirm("Are you sure you want to delete this request?")) {
-      setLeaveData((prev) => prev.filter((item) => item.id !== id));
+  const openAddModal = () => {
+    setEditingLeave(null);
+    setValidated(false);
+    setFormData({
+      First_Name: "",
+      Last_Name: "",
+      Employee_Id: "",
+      Leave_Type: "Casual Leave",
+      Start_Date: "",
+      End_Date: "",
+      Reason: "",
+    });
+    setShowModal(true);
+  };
+
+  const openEditModal = (req) => {
+    setEditingLeave(req);
+    setValidated(false);
+    const formattedStartDate = req.Start_Date ? new Date(req.Start_Date).toISOString().split("T")[0] : "";
+    const formattedEndDate = req.End_Date ? new Date(req.End_Date).toISOString().split("T")[0] : "";
+    setFormData({
+      ...req,
+      Start_Date: formattedStartDate,
+      End_Date: formattedEndDate,
+    });
+    setShowModal(true);
+  };
+
+  const closeModal = () => {
+    setShowModal(false);
+    setValidated(false);
+    setEditingLeave(null);
+    setIsLoading(false);
+    setFormData({
+      First_Name: "",
+      Last_Name: "",
+      Employee_Id: "",
+      Leave_Type: "Casual Leave",
+      Start_Date: "",
+      End_Date: "",
+      Reason: "",
+    });
+  };
+
+  const handleSave = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const form = e.currentTarget;
+    if (form.checkValidity() === false) {
+      setValidated(true);
+      return;
+    }
+
+    if (formData.End_Date && formData.Start_Date && new Date(formData.End_Date) < new Date(formData.Start_Date)) {
+      alert("End date cannot be earlier than start date.");
+      setValidated(true);
+      return;
+    }
+
+    setIsLoading(true);
+
+    const payload = { ...formData };
+    if (payload.Start_Date) {
+      payload.Start_Date = new Date(payload.Start_Date).toISOString().split("T")[0];
+    }
+    if (payload.End_Date) {
+      payload.End_Date = new Date(payload.End_Date).toISOString().split("T")[0];
+    }
+
+    try {
+      let response;
+      if (editingLeave) {
+        response = await api.put(`/Leave_Request/${editingLeave.Leave_Id}`, payload);
+      } else {
+        response = await api.post("/Leave_Request", payload);
+      }
+
+      alert(response.data.message || (editingLeave ? "Leave request updated successfully!" : "Leave request added successfully!"));
+
+      closeModal();
+      fetchLeaves(currentPage, searchDebounce);
+    } catch (error) {
+      console.error("Save error:", error);
+      if (error.response && error.response.data) {
+        alert(error.response.data.message);
+      } else {
+        alert("Something went wrong. Please try again.");
+      }
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  if (loading) {
-    return (
-      <Container className="text-center mt-5">
-        <Spinner animation="border" />
-      </Container>
-    );
-  }
+  const handleDelete = async (id) => {
+    if (window.confirm("Are you sure you want to delete?")) {
+      try {
+        const response = await api.delete(`/Leave_Request/${id}`);
+
+        alert(response.data.message || "Leave request deleted successfully!");
+
+        if (leaveData.length === 1 && currentPage > 1) {
+          setCurrentPage(currentPage - 1);
+        } else {
+          fetchLeaves(currentPage, searchDebounce);
+        }
+      } catch (error) {
+        console.error("Error deleting leave request:", error);
+        if (error.response && error.response.data) {
+          alert(error.response.data.message || "Failed to delete leave request");
+        } else {
+          alert("Something went wrong while deleting. Please try again.");
+        }
+      }
+    }
+  };
+
+  // Pagination handlers
+  const handleNextPage = () => {
+    if (pagination.hasNext) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+
+  const handlePreviousPage = () => {
+    if (pagination.hasPrevious) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
+
+  const handlePageClick = (pageNum) => {
+    setCurrentPage(pageNum);
+  };
+
+  const getPageNumbers = () => {
+    const pages = [];
+    const totalPages = pagination.totalPages;
+
+    if (totalPages <= 5) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      if (currentPage <= 3) {
+        for (let i = 1; i <= 5; i++) {
+          pages.push(i);
+        }
+      } else if (currentPage >= totalPages - 2) {
+        for (let i = totalPages - 4; i <= totalPages; i++) {
+          pages.push(i);
+        }
+      } else {
+        for (let i = currentPage - 2; i <= currentPage + 2; i++) {
+          pages.push(i);
+        }
+      }
+    }
+
+    return pages;
+  };
 
   return (
-    <Container className="mt-4">
-      <Row className="align-items-center mb-4">
+    <Container className="mt-4 rightArea">
+      <Row className="align-items-center mb-3">
         <Col md={4}>
-          <h3>Leave Requests</h3>
+          <h4>Leave Requests</h4>
         </Col>
-        <Col md={4}>
-          <Form.Control
-            placeholder="Search by name..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+        <Col md={4} sm={12} className="mb-2">
+          <InputGroup>
+            <FormControl
+              placeholder="Search by name..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+            <Button variant="outline-secondary" onClick={() => setSearch("")}>
+              Clear
+            </Button>
+          </InputGroup>
         </Col>
-        <Col md={4} className="text-md-end mt-3 mt-md-0">
-          <Button onClick={() => openModal()}>+ Add New</Button>
+        <Col md={4} sm={12} className="text-end">
+          <Button onClick={openAddModal}>+ Add New</Button>
         </Col>
       </Row>
 
-      <Table bordered hover responsive>
-        <thead className="table-secondary">
-          <tr>
-            <th>SNO.</th>
-            <th>Name</th>
-            <th>Employee ID</th>
-            <th>Leave Type</th>
-            <th>From</th>
-            <th>To</th>
-            <th>Reason</th>
-            <th className="text-center">Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          {displayedData.map((item, index) => (
-            <tr key={item.id}>
-              <td>{(currentPage - 1) * itemsPerPage + index + 1}</td>
-              <td>{item.name}</td>
-              <td>{item.employeeId}</td>
-              <td>{item.leaveType}</td>
-              <td>{item.fromDate}</td>
-              <td>{item.toDate}</td>
-              <td>{item.reason}</td>
-              <td className="text-center">
-                <Button
-                  variant="success"
-                  size="sm"
-                  className="me-2"
-                  onClick={() => alert(`Approved: ${item.name}`)}
-                >
-                  Approve
-                </Button>
-                <Button
-                  variant="danger"
-                  size="sm"
-                  className="me-2"
-                  onClick={() => alert(`Rejected: ${item.name}`)}
-                >
-                  Reject
-                </Button>
-               
-              </td>
+      {/* Leave Request Table */}
+      <div className="leave-table-container">
+        <Table bordered hover responsive className="Medium text-center mb-0">
+          <thead className="table-secondary">
+            <tr>
+              <th>No</th>
+              <th>Leave_Id</th>
+              <th>Name</th>
+              <th>Employee ID</th>
+              <th>Leave Type</th>
+              <th>From</th>
+              <th>To</th>
+              <th>Reason</th>
+              <th style={{ width: "120px" }}>Actions</th>
             </tr>
-          ))}
-        </tbody>
-      </Table>
-
-      <div className="d-flex justify-content-center mt-3">
-        <Stack spacing={2}>
-          <Pagination
-            count={Math.ceil(filteredData.length / itemsPerPage)}
-            page={currentPage}
-            onChange={(e, value) => setCurrentPage(value)}
-            renderItem={(item) => (
-              <PaginationItem
-                slots={{ previous: ArrowBackIcon, next: ArrowForwardIcon }}
-                {...item}
-              />
+          </thead>
+          <tbody>
+            {isTableLoading ? (
+              <tr>
+                <td colSpan="9" className="text-center py-4">
+                  <div className="spinner-border" role="status">
+                    <span className="visually-hidden">Loading...</span>
+                  </div>
+                </td>
+              </tr>
+            ) : leaveData.length > 0 ? (
+              leaveData.map((d, idx) => (
+                <tr key={d.Leave_Id}>
+                  <td>{(currentPage - 1) * 10 + idx + 1}</td>
+                  <td>{d.Leave_Id}</td>
+                  <td>{`${d.First_Name} ${d.Last_Name}`}</td>
+                  <td>{d.Employee_Id}</td>
+                  <td>{d.Leave_Type || "N/A"}</td>
+                  <td>{new Date(d.Start_Date).toISOString().split("T")[0]}</td>
+                  <td>{new Date(d.End_Date).toISOString().split("T")[0]}</td>
+                  <td>{d.Reason}</td>
+                  <td className="text-center">
+                    <div className="d-flex justify-content-center gap-2">
+                      <Button
+                        size="sm"
+                        variant="primary"
+                        onClick={() => openEditModal(d)}
+                      >
+                        Edit
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="danger"
+                        onClick={() => handleDelete(d.Leave_Id)}
+                      >
+                        Delete
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="9" className="text-center py-4 text-muted">
+                  {searchDebounce
+                    ? "No leave requests found matching your search"
+                    : "No leave requests found"}
+                </td>
+              </tr>
             )}
-          />
-        </Stack>
+          </tbody>
+        </Table>
       </div>
 
+      {/* Pagination */}
+      {pagination.totalPages > 1 && (
+        <div className="d-flex justify-content-between align-items-center mt-3">
+          <div>
+            Showing {leaveData.length} of {pagination.totalItems} result(s)
+            {searchDebounce && ` for "${searchDebounce}"`}
+          </div>
+          <div className="d-flex gap-2">
+            <Button
+              size="sm"
+              variant="outline-primary"
+              onClick={handlePreviousPage}
+              disabled={!pagination.hasPrevious || isTableLoading}
+            >
+              Previous
+            </Button>
+            {getPageNumbers().map((num) => (
+              <Button
+                key={num}
+                size="sm"
+                variant={num === currentPage ? "primary" : "outline-primary"}
+                onClick={() => handlePageClick(num)}
+                disabled={isTableLoading}
+              >
+                {num}
+              </Button>
+            ))}
+            <Button
+              size="sm"
+              variant="outline-primary"
+              onClick={handleNextPage}
+              disabled={!pagination.hasNext || isTableLoading}
+            >
+              Next
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Modal */}
-      <Modal show={showModal} onHide={closeModal} centered size="lg">
-        <Modal.Header closeButton>
-          <Modal.Title>{formData?.id ? "Edit" : "Add"} Leave Request</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <Form>
-            <Row className="mb-3">
+      <Modal
+        show={showModal}
+        onHide={closeModal}
+        centered
+        size="lg"
+        backdrop="static"
+      >
+        <Form noValidate validated={validated} onSubmit={handleSave}>
+          <Modal.Header closeButton>
+            <Modal.Title>
+              {editingLeave ? "Edit Leave Request" : "Add Leave Request"}
+            </Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            <Row>
               <Col md={6}>
-                <Form.Label>First Name</Form.Label>
-                <Form.Control
-                  name="firstName"
-                  value={formData?.firstName || ""}
-                  onChange={handleChange}
-                />
+                <Form.Group className="mb-3">
+                  <Form.Label>
+                    First Name <span className="text-danger">*</span>
+                  </Form.Label>
+                  <Form.Control
+                    required
+                    name="First_Name"
+                    value={formData.First_Name}
+                    onChange={handleChange}
+                    placeholder="Enter first name"
+                    disabled={isLoading}
+                  />
+                  <Form.Control.Feedback type="invalid">
+                    Please provide a first name.
+                  </Form.Control.Feedback>
+                </Form.Group>
               </Col>
               <Col md={6}>
-                <Form.Label>Last Name</Form.Label>
-                <Form.Control
-                  name="lastName"
-                  value={formData?.lastName || ""}
-                  onChange={handleChange}
-                />
+                <Form.Group className="mb-3">
+                  <Form.Label>
+                    Last Name <span className="text-danger">*</span>
+                  </Form.Label>
+                  <Form.Control
+                    required
+                    name="Last_Name"
+                    value={formData.Last_Name}
+                    onChange={handleChange}
+                    placeholder="Enter last name"
+                    disabled={isLoading}
+                  />
+                  <Form.Control.Feedback type="invalid">
+                    Please provide a last name.
+                  </Form.Control.Feedback>
+                </Form.Group>
               </Col>
             </Row>
 
-            <Row className="mb-3">
+            <Row>
               <Col md={6}>
-                <Form.Label>Leave Type</Form.Label>
-                <Form.Select
-                  name="leaveType"
-                  value={formData?.leaveType || ""}
-                  onChange={handleChange}
-                >
-                  <option value="">Select Leave Type</option>
-                  <option value="Casual Leave">Casual Leave</option>
-                  <option value="Medical Leave">Medical Leave</option>
-                  <option value="Earned Leave">Earned Leave</option>
-                </Form.Select>
+                <Form.Group className="mb-3">
+                  <Form.Label>
+                    Employee ID <span className="text-danger">*</span>
+                  </Form.Label>
+                  <Form.Control
+                    required
+                    name="Employee_Id"
+                    value={formData.Employee_Id}
+                    onChange={handleChange}
+                    placeholder="Enter employee ID"
+                    disabled={isLoading}
+                  />
+                  <Form.Control.Feedback type="invalid">
+                    Please provide an employee ID.
+                  </Form.Control.Feedback>
+                </Form.Group>
               </Col>
               <Col md={6}>
-                <Form.Label>Employee ID</Form.Label>
-                <Form.Control
-                  name="employeeId"
-                  value={formData?.employeeId || ""}
-                  onChange={handleChange}
-                />
+                <Form.Group className="mb-3">
+                  <Form.Label>
+                    Leave Type <span className="text-danger">*</span>
+                  </Form.Label>
+                  <Form.Select
+                    required
+                    name="Leave_Type"
+                    value={formData.Leave_Type}
+                    onChange={handleChange}
+                    disabled={isLoading}
+                  >
+                    <option value="">Select a leave type</option>
+                    <option value="Casual Leave">Casual Leave</option>
+                    <option value="Medical Leave">Medical Leave</option>
+                    <option value="Earned Leave">Earned Leave</option>
+                  </Form.Select>
+                  <Form.Control.Feedback type="invalid">
+                    Please select a leave type.
+                  </Form.Control.Feedback>
+                </Form.Group>
               </Col>
             </Row>
 
-            <Row className="mb-3">
+            <Row>
               <Col md={6}>
-                <Form.Label>From Date</Form.Label>
-                <Form.Control
-                  type="date"
-                  name="fromDate"
-                  value={formData?.fromDate || ""}
-                  onChange={handleChange}
-                />
+                <Form.Group className="mb-3">
+                  <Form.Label>
+                    From Date <span className="text-danger">*</span>
+                  </Form.Label>
+                  <Form.Control
+                    required
+                    type="date"
+                    name="Start_Date"
+                    value={formData.Start_Date}
+                    onChange={handleChange}
+                    disabled={isLoading}
+                  />
+                  <Form.Control.Feedback type="invalid">
+                    Please provide a start date.
+                  </Form.Control.Feedback>
+                </Form.Group>
               </Col>
               <Col md={6}>
-                <Form.Label>To Date</Form.Label>
-                <Form.Control
-                  type="date"
-                  name="toDate"
-                  value={formData?.toDate || ""}
-                  onChange={handleChange}
-                />
+                <Form.Group className="mb-3">
+                  <Form.Label>
+                    To Date <span className="text-danger">*</span>
+                  </Form.Label>
+                  <Form.Control
+                    required
+                    type="date"
+                    name="End_Date"
+                    value={formData.End_Date}
+                    onChange={handleChange}
+                    disabled={isLoading}
+                  />
+                  <Form.Control.Feedback type="invalid">
+                    Please provide an end date.
+                  </Form.Control.Feedback>
+                </Form.Group>
               </Col>
             </Row>
 
             <Form.Group className="mb-3">
-              <Form.Label>Reason / Message</Form.Label>
+              <Form.Label>
+                Reason <span className="text-danger">*</span>
+              </Form.Label>
               <Form.Control
+                required
                 as="textarea"
-                rows={3}
-                name="reason"
-                value={formData?.reason || ""}
+                name="Reason"
+                value={formData.Reason}
                 onChange={handleChange}
+                placeholder="Enter reason for leave"
+                disabled={isLoading}
               />
+              <Form.Control.Feedback type="invalid">
+                Please provide a reason.
+              </Form.Control.Feedback>
             </Form.Group>
-          </Form>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={closeModal}>
-            Cancel
-          </Button>
-          <Button variant="primary" onClick={saveData}>
-            Save
-          </Button>
-        </Modal.Footer>
+          </Modal.Body>
+          <Modal.Footer>
+            <Button variant="secondary" onClick={closeModal} disabled={isLoading}>
+              Cancel
+            </Button>
+            <Button variant="primary" type="submit" disabled={isLoading}>
+              {isLoading ? (
+                <>
+                  <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                  {editingLeave ? "Updating..." : "Saving..."}
+                </>
+              ) : (
+                editingLeave ? "Update" : "Save"
+              )}
+            </Button>
+          </Modal.Footer>
+        </Form>
       </Modal>
     </Container>
   );
-};
-
-export default LeaveRequest;
+}

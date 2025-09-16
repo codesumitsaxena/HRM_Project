@@ -1,6 +1,4 @@
 import React, { useState } from "react";
-
-
 import { Form, Button, Alert, InputGroup } from "react-bootstrap";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -15,6 +13,7 @@ function Login() {
     password: "",
     confirmPassword: "",
   });
+  
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -33,37 +32,52 @@ function Login() {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
+  // Separate login handler for clarity
+  const handleLogin = async (email, password) => {
+    // ✅ Send correct field names that backend expects
+    const res = await axios.post("http://localhost:3000/api/auth/login", {
+      Email: email,        // ✅ Capital E
+      Password: password   // ✅ Capital P
+    });
+
+    // ✅ Save token to localStorage
+    localStorage.setItem("token", res.data.token);
+    localStorage.setItem("user", JSON.stringify(res.data.user));
+    
+    // Navigate to dashboard after successful login
+    navigate("/dashboard");
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
 
     try {
       if (isSignup) {
+        // Handle signup
         if (formData.password !== formData.confirmPassword) {
           setError("Passwords do not match.");
           return;
         }
 
+        // ✅ Send correct field names that backend expects
         await axios.post("http://localhost:3000/api/auth/register", {
-          name: formData.name,
-          email: formData.email,
-          password: formData.password,
+          Full_Name: formData.name,              // ✅ Changed from 'name'
+          Email: formData.email,                 // ✅ Capital E
+          Password: formData.password,           // ✅ Capital P
+          ConfirmPassword: formData.confirmPassword // ✅ Added this field
         });
 
         alert("Registration successful! Please log in.");
         setIsSignup(false);
+        // Clear form after successful signup
+        setFormData({ name: "", email: "", password: "", confirmPassword: "" });
       } else {
-        const res = await axios.post("http://localhost:3000/api/auth/login", {
-          email: formData.email,
-          password: formData.password,
-        });
-
-        localStorage.setItem("token", res.data.token);
-        localStorage.setItem("user", JSON.stringify(res.data.user));
-        navigate("/dashboard");
+        // Handle login using the separate login function
+        await handleLogin(formData.email, formData.password);
       }
     } catch (err) {
-      console.error(err);
+      console.error("Error details:", err.response?.data || err.message);
       setError(err.response?.data?.message || "Something went wrong.");
     }
   };
@@ -208,12 +222,11 @@ function Login() {
                 </>
               ) : (
                 <>
-                  Don’t have an account?{" "}
+                  Don't have an account?{" "}
                   <button
                     className="btn btn-link text-success p-0"
                     onClick={toggleForm}
-                    style={{ textDecoration: "none" }}
-                  >
+                    style={{ textDecoration: "none" }}>
                     Sign up
                   </button>
                 </>

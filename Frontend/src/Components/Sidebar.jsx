@@ -1,229 +1,120 @@
-import React, { useState } from 'react';
-import {
-  FaTachometerAlt,
-  FaUmbrellaBeach,
-  FaCalendarAlt,
-  FaRegListAlt,
-  FaUsers,
-  FaProjectDiagram,
-  FaCog
+// Sidebar.jsx - Final Component
+import React from 'react';
+import "./sidebar.css";
+import { Nav } from 'react-bootstrap';
+import { 
+  FaTachometerAlt, 
+  FaUsers, 
+  FaCalendarCheck, 
+  FaFileAlt,
+  FaBuilding,
+  FaUserShield,
+  FaSignOutAlt 
 } from 'react-icons/fa';
-import { IoGrid } from 'react-icons/io5';
-import Box from '@mui/material/Box';
-import Drawer from '@mui/material/Drawer';
-import Toolbar from '@mui/material/Toolbar';
-import List from '@mui/material/List';
-import ListItem from '@mui/material/ListItem';
-import ListItemButton from '@mui/material/ListItemButton';
-import ListItemIcon from '@mui/material/ListItemIcon';
-import ListItemText from '@mui/material/ListItemText';
-import CssBaseline from '@mui/material/CssBaseline';
-import NavbarTop from './NavbarApp';
-import DashboardHeader from './Dashboardheader';
-import EmployeeTable from './EmployeeTable';
-import { Image, Dropdown, Nav, Tab } from 'react-bootstrap';
-import { NavLink } from 'react-router-dom'; // ✅ Needed for routing
-import DepartmentTable from './DepartmentTable';
-import { MdOutlineManageAccounts } from "react-icons/md";
-import { FiUsers } from "react-icons/fi";
-import SalaryChart from './hrdashboard/salarychart';
-import HRDashboard from './hrdashboard/hrdashboard';
-import EmployeeDashboard from './hrdashboard/employeDashboard';
 
+const Sidebar = ({ onMenuClick, activeItem, show, onHide }) => {
+  const menuItems = [
+    { id: 'dashboard', label: 'HR Dashboard', icon: <FaTachometerAlt /> },
+    { id: 'employees', label: 'All Employees', icon: <FaUsers /> },
+    { id: 'leave-requests', label: 'Leave Requests', icon: <FaFileAlt /> },
+    { id: 'departments', label: 'Departments', icon: <FaBuilding /> },
+  ];
 
-const drawerWidth = 240;
-
-const Sidebar = () => {
-  const [selectedIndex, setSelectedIndex] = useState(0);
-  const [showEmployees, setShowEmployees] = useState(false); // ✅ FIXED
-
-  const handleListItemClick = (index) => {
-    setSelectedIndex(index);
+  const handleMenuClick = (itemId) => {
+    onMenuClick(itemId);
   };
 
-  const toggleEmployees = () => {
-    setShowEmployees(!showEmployees);
+  const handleOtherMenuClick = (action) => {
+    console.log('Other menu clicked:', action);
+    // Handle other menu actions here
+    if (window.innerWidth <= 991.98) {
+      onHide();
+    }
   };
 
   return (
-    <>
-      {/* Top Navbar */}
-      <Box
-        sx={{
-          position: 'fixed',
-          width: '100%',
-          zIndex: (theme) => theme.zIndex.drawer + 1
-        }}
-      >
-        <NavbarTop />
-      </Box>
+    <div className={`sidebar bg-light border-end ${show ? 'show' : ''}`}>
+      {/* User Profile Section */}
+      <div className="p-3 border-bottom">
+        <div className="d-flex align-items-center">
+          <div className="rounded-circle bg-secondary d-flex align-items-center justify-content-center me-3" 
+               style={{ width: '40px', height: '40px' }}>
+            <FaUsers className="text-white" />
+          </div>
+          <div>
+            <div className="fw-semibold">Welcome</div>
+            <div className="text-muted small">Jessica Doe</div>
+          </div>
+        </div>
+      </div>
 
-      <Box sx={{ display: 'flex'  }}>
-        {/* Sidebar */}
-        <Drawer
-          variant="permanent"
-          sx={{
-            width: '22%',
-            flexShrink: 0,
-            [`& .MuiDrawer-paper`]: {
-              width: '22%',
-              top: 64,
-              marginTop: '15px',
-              zIndex: 999,
-              boxSizing: 'border-box',
-              height: 'calc(100% - 64px)',
-              overflowY: 'scroll',
-             '&::-webkit-scrollbar': { display: 'none' }
-              // hides scrollbar completely // prevent overlap
-            }
-          }}
-        >
-          <List className='list-sidebar' >
-            <div className="profile-section px-3">
-              <div className="mb-4">
-                <div className="d-flex">
-                  <Image
-                    src="src/assets/aditya pic.jpg"
-                    roundedCircle
-                    style={{ width: '60px', height: '60px' }}
-                  />
-                  <div className="ms-3 mt-2 text-align-left">
-                    <span className="ms-1 text-muted">Welcome</span>
-                    <br />
-                    <Dropdown>
-                      <Dropdown.Toggle variant="link" className="profilename p-0">
-                        Jessica Doe
-                      </Dropdown.Toggle>
-                      <Dropdown.Menu>
-                        <Dropdown.Item>Profile</Dropdown.Item>
-                        <Dropdown.Item>Logout</Dropdown.Item>
-                      </Dropdown.Menu>
-                    </Dropdown>
-                  </div>
-                </div>
+      {/* Stats Section */}
+      <div className="p-3 border-bottom">
+        <div className="row text-center g-0">
+          <div className="col-4">
+            <div className="fw-bold text-primary">5+</div>
+            <div className="small text-muted">Experience</div>
+          </div>
+          <div className="col-4">
+            <div className="fw-bold text-success">400+</div>
+            <div className="small text-muted">Employees</div>
+          </div>
+          <div className="col-4">
+            <div className="fw-bold text-info">80+</div>
+            <div className="small text-muted">Clients</div>
+          </div>
+        </div>
+      </div>
 
-                <div className="menutabs d-flex justify-content-between mt-3 text-muted">
-                  <div className="text-center">
-                    <div className="fw-bold">5+</div>
-                    <small>Experience</small>
-                  </div>
-                  <div className="text-center">
-                    <div className="fw-bold">400+</div>
-                    <small>Employees</small>
-                  </div>
-                  <div className="text-center">
-                    <div className="fw-bold">80+</div>
-                    <small>Clients</small>
-                  </div>
-                </div>
-              </div>
+      {/* Navigation Menu */}
+      <Nav className="flex-column p-2">
+        <div className="mb-3">
+          <div className="text-muted small fw-semibold px-3 py-2 text-uppercase">Main Menu</div>
+          {menuItems.map((item) => (
+            <Nav.Link
+              key={item.id}
+              className={`px-3 py-2 mb-1 rounded d-flex align-items-center text-decoration-none ${
+                activeItem === item.id 
+                  ? 'bg-primary text-white' 
+                  : 'text-dark hover-bg-light'
+              }`}
+              onClick={() => handleMenuClick(item.id)}
+              style={{ cursor: 'pointer' }}
+            >
+              <span className="me-3" style={{ minWidth: '20px' }}>
+                {item.icon}
+              </span>
+              {item.label}
+            </Nav.Link>
+          ))}
+        </div>
 
-              <Tab.Container defaultActiveKey="hr">
-                <Nav variant="tabs" className="mb-3">
-                  <Nav.Item>
-                    <Nav.Link className="menutabs" eventKey="hr">
-                      HR
-                    </Nav.Link>
-                  </Nav.Item>
-                  <Nav.Item>
-                    <Nav.Link className="menutabs" eventKey="project">
-                      Project
-                    </Nav.Link>
-                  </Nav.Item>
-                  <Nav.Item>
-                    <Nav.Link disabled>
-                      <IoGrid />
-                    </Nav.Link>
-                  </Nav.Item>
-                  <Nav.Item>
-                    <Nav.Link disabled>
-                      <FaCog />
-                    </Nav.Link>
-                  </Nav.Item>
-                </Nav>
-
-                <Tab.Content>
-                  <Tab.Pane eventKey="hr">
-                    <Nav className="flex-column">
-                      <Nav.Link className="menuButton">
-                        <FaTachometerAlt className="me-2" /> HR Dashboard
-                      </Nav.Link>
-                      <Nav.Link className="menuButton">
-                        <FaUmbrellaBeach className="me-2" /> Holidays
-                      </Nav.Link>
-                      <Nav.Link className="menuButton">
-                        <FaCalendarAlt className="me-2" /> Events
-                      </Nav.Link>
-                      <Nav.Link className="menuButton">
-                        <FaRegListAlt className="me-2" /> Activities
-                      </Nav.Link>
-                      <Nav.Link className="menuButton">
-                        <FaProjectDiagram className="me-2" /> HR Social
-                      </Nav.Link>
-                      <Nav.Link onClick={toggleEmployees} className="menuButton">
-                        <FaUsers className="me-2" /> Employees
-                      </Nav.Link>
-                      
-
-                      {showEmployees && (
-                        <div className="ms-4">
-                          <Nav.Link as={NavLink} to="/employees/list" className="menuButton">
-                           All Employee
-                          </Nav.Link>
-                          <Nav.Link as={NavLink} to="/employees/add" className="menuButton">
-                            Leave Requests
-                          </Nav.Link>
-                          <Nav.Link as={NavLink} to="/employees/roles" className="menuButton">
-                            Attendance
-                          </Nav.Link>
-                          <Nav.Link as={NavLink} to="/employees/roles" className="menuButton">
-                            Department
-                          </Nav.Link>
-                        </div>
-                      )}
-                      <Nav.Link  className="menuButton">
-                        <FiUsers className="me-2" /> Users
-                      </Nav.Link>
-                      <Nav.Link className="menuButton">
-                        <FiUsers className="me-2" /> Authentication
-                      </Nav.Link>
-                      <Nav.Link className="menuButton">
-                        <MdOutlineManageAccounts className="me-2" /> Accounts
-                      </Nav.Link>
-                    </Nav>
-                  </Tab.Pane>
-
-                  <Tab.Pane eventKey="project">
-                    <p>Project tab content...</p>
-                  </Tab.Pane>
-                </Tab.Content>
-              </Tab.Container>
-            </div>
-          </List>
-        </Drawer>
-
-        {/* Main Content */}
-              <Box
-                  sx={{
-                      width: '78%', // Remaining space after sidebar (100% - 22%)
-                      flexGrow: 1,
-                      marginTop: '80px', // Pushes content below the AppBar/NavbarTop
-                      height: 'calc(100vh - 80px)', // Fits remaining screen height after navbar
-                      overflowY: 'auto', // Scroll only inside content
-                      padding:3,
-                      '&::-webkit-scrollbar': { display: 'none' } // Hide scrollbar (optional)
-                  }}
-              >
-                  <DashboardHeader />
-          {/* <EmployeeTable /> */}
-          {/* <DepartmentTable />  */}
-          <SalaryChart />
-          <HRDashboard/>
-          <EmployeeDashboard />
-          
-        </Box>
-      </Box>
-    </>
+        {/* Other Menu Items */}
+        <div className="mt-auto">
+          <div className="text-muted small fw-semibold px-3 py-2 text-uppercase">Others</div>
+          <Nav.Link 
+            className="px-3 py-2 mb-1 rounded d-flex align-items-center text-dark text-decoration-none"
+            onClick={() => handleOtherMenuClick('users')}
+            style={{ cursor: 'pointer' }}
+          >
+            <span className="me-3" style={{ minWidth: '20px' }}>
+              <FaUserShield />
+            </span>
+            Users
+          </Nav.Link>
+          <Nav.Link 
+            className="px-3 py-2 mb-1 rounded d-flex align-items-center text-dark text-decoration-none"
+            onClick={() => handleOtherMenuClick('authentication')}
+            style={{ cursor: 'pointer' }}
+          >
+            <span className="me-3" style={{ minWidth: '20px' }}>
+              <FaUserShield />
+            </span>
+            Authentication
+          </Nav.Link>
+        </div>
+      </Nav>
+    </div>
   );
 };
 
