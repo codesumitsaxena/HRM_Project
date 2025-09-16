@@ -60,6 +60,14 @@ function EmployeeTable() {
     fetchEmployees(currentPage, searchDebounce);
   }, [currentPage, searchDebounce]);
 
+  // ✅ ADD this function to refresh department counts after employee operations
+  const refreshDepartmentCounts = () => {
+    // Call the global function exposed by DepartmentTable
+    if (window.refreshDepartments) {
+      window.refreshDepartments();
+    }
+  };
+
   const fetchEmployees = async (page = 1, searchTerm = '') => {
     setIsTableLoading(true);
     try {
@@ -144,6 +152,7 @@ function EmployeeTable() {
     });
   };
 
+  // ✅ UPDATE your handleSave function (in Employee component)
   const handleSave = async (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -178,6 +187,10 @@ function EmployeeTable() {
       closeModal();
       // Refresh current page data
       fetchEmployees(currentPage, searchDebounce);
+      
+      // ✅ NEW: Refresh department counts after employee save
+      refreshDepartmentCounts();
+      
     } catch (error) {
       console.error("Save error:", error);
       
@@ -192,6 +205,7 @@ function EmployeeTable() {
     }
   };
 
+  // ✅ UPDATE your handleDelete function (in Employee component)
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete?')) {
       try {
@@ -206,6 +220,10 @@ function EmployeeTable() {
         } else {
           fetchEmployees(currentPage, searchDebounce);
         }
+
+        // ✅ NEW: Refresh department counts after employee deletion
+        refreshDepartmentCounts();
+
       } catch (error) {
         console.error('Error deleting employee:', error);
         

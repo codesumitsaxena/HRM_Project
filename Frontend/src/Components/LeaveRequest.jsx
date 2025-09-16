@@ -287,7 +287,7 @@ export default function LeaveRequest() {
           <thead className="table-secondary">
             <tr>
               <th>No</th>
-              <th>Leave_Id</th>
+              <th>Leave ID</th>
               <th>Name</th>
               <th>Employee ID</th>
               <th>Leave Type</th>

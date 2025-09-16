@@ -1,4 +1,4 @@
-// DepartmentTable.jsx
+// DepartmentTable.jsx - Simplified version for trigger-based employee counting
 import React, { useState, useEffect } from "react";
 import {
   Table,
@@ -19,7 +19,7 @@ export default function DepartmentTable() {
   const [query, setQuery] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState(null);
-  const [form, setForm] = useState({ Department_Name: "", Department_Head: "", Total_Employee: 0 });
+  const [form, setForm] = useState({ Department_Name: "", Department_Head: "" }); // ✅ No Total_Employee needed
   const [loading, setLoading] = useState(true);
   const [isTableLoading, setIsTableLoading] = useState(false);
   const [saveLoading, setSaveLoading] = useState(false);
@@ -40,7 +40,7 @@ export default function DepartmentTable() {
   // Add validation errors state
   const [validationErrors, setValidationErrors] = useState({});
 
-  // 🛠️ NEW STATE: Store the dynamic list of available departments for the dropdown
+  // Store the dynamic list of available departments for the dropdown
   const [availableDepartments, setAvailableDepartments] = useState([]);
 
   // Department options for dropdown
@@ -67,6 +67,7 @@ export default function DepartmentTable() {
     fetchDepartments(currentPage, searchDebounce);
   }, [currentPage, searchDebounce]);
 
+  // ✅ SIMPLIFIED: Since triggers handle Total_Employee, just fetch normally
   const fetchDepartments = async (page = 1, searchTerm = '') => {
     setIsTableLoading(true);
     try {
@@ -80,7 +81,7 @@ export default function DepartmentTable() {
       setDepartments(res.data.data);
       setPagination(res.data.pagination);
 
-      // 🛠️ NEW LOGIC: Update the list of available departments
+      // Update the list of available departments
       const fetchedDeptNames = res.data.data.map(d => d.Department_Name);
       setAvailableDepartments(
         allDepartmentOptions.filter(option => !fetchedDeptNames.includes(option.value))
@@ -95,7 +96,7 @@ export default function DepartmentTable() {
         hasPrevious: false,
         limit: 10
       });
-      setAvailableDepartments(allDepartmentOptions); // Reset dropdown on error
+      setAvailableDepartments(allDepartmentOptions);
       if (err.code === 'ECONNABORTED') {
         alert("Request timed out. Please check your connection.");
       } else {
@@ -110,7 +111,7 @@ export default function DepartmentTable() {
   // ✅ Open Add form
   function openAdd() {
     setEditing(null);
-    setForm({ Department_Name: "", Department_Head: "", Total_Employee: 0 });
+    setForm({ Department_Name: "", Department_Head: "" });
     setValidationErrors({});
     setShowModal(true);
   }
@@ -121,11 +122,10 @@ export default function DepartmentTable() {
     setForm({
       Department_Name: dept.Department_Name,
       Department_Head: dept.Department_Head,
-      Total_Employee: dept.Total_Employee || 0,
     });
     setValidationErrors({});
 
-    // 🛠️ NEW LOGIC: For editing, add the current department's name back to the list
+    // For editing, add the current department's name back to the list
     const filteredOptions = allDepartmentOptions.filter(
       option => !departments.map(d => d.Department_Name).includes(option.value) || option.value === dept.Department_Name
     );
@@ -154,7 +154,7 @@ export default function DepartmentTable() {
     }
   }
 
-  // Validation function
+  // ✅ Validation function
   const validateForm = () => {
     const errors = {};
 
@@ -166,14 +166,10 @@ export default function DepartmentTable() {
       errors.Department_Head = "Department head is required";
     }
 
-    if (form.Total_Employee < 0) {
-      errors.Total_Employee = "Total employees cannot be negative";
-    }
-
     return errors;
   };
 
-  // ✅ Add / Update department using api
+  // ✅ handleSave function
   const handleSave = async (e) => {
     e.preventDefault();
 
@@ -184,10 +180,17 @@ export default function DepartmentTable() {
     setSaveLoading(true);
 
     try {
+      const dataToSend = {
+        Department_Name: form.Department_Name,
+        Department_Head: form.Department_Head,
+        // ✅ Total_Employee will be set to 0 by default in backend for new departments
+        // and maintained by triggers automatically
+      };
+
       if (editing) {
-        await api.put(`/departments/${editing.Dept_Id}`, form);
+        await api.put(`/departments/${editing.Dept_Id}`, dataToSend);
       } else {
-        await api.post(`/departments`, form);
+        await api.post(`/departments`, dataToSend);
       }
       
       closeModal();
@@ -197,17 +200,18 @@ export default function DepartmentTable() {
       if (err.code === 'ECONNABORTED') {
         alert("Request timed out. Please check your connection.");
       } else {
-        alert("Failed to save department");
+        alert(`Failed to save department: ${err.response?.data?.message || err.message}`);
       }
     } finally {
       setSaveLoading(false);
     }
   };
 
-  // ✅ handleChange with validation error clearing
+  // ✅ handleChange function
   function handleChange(e) {
     const { name, value } = e.target;
     setForm((f) => ({ ...f, [name]: value }));
+    
     if (validationErrors[name]) {
       setValidationErrors(prev => {
         const newErrors = { ...prev };
@@ -222,10 +226,23 @@ export default function DepartmentTable() {
       setShowModal(false);
       setValidationErrors({});
       setSaveLoading(false);
-      setForm({ Department_Name: "", Department_Head: "", Total_Employee: 0 });
+      setForm({ Department_Name: "", Department_Head: "" });
       setEditing(null);
     }
   };
+
+  // ✅ Function to refresh department data (for external calls)
+  const refreshDepartments = () => {
+    fetchDepartments(currentPage, searchDebounce);
+  };
+
+  // ✅ Expose refresh function globally so Employee component can call it
+  useEffect(() => {
+    window.refreshDepartments = refreshDepartments;
+    return () => {
+      delete window.refreshDepartments;
+    };
+  }, [currentPage, searchDebounce]);
 
   const handleNextPage = () => {
     if (pagination.hasNext) {
@@ -301,10 +318,10 @@ export default function DepartmentTable() {
         <thead className="table-secondary">
           <tr>
             <th>No</th>
-            <th>Dept_Id</th>
-            <th>Department_Name</th>
-            <th>Department_Head</th>
-            <th>Total_Employee</th>
+            <th>Department ID</th>
+            <th>Department Name</th>
+            <th>Department Head</th>
+            <th>Total Employees</th>
             <th style={{ width: "100px" }}>Actions</th>
           </tr>
         </thead>
@@ -330,7 +347,10 @@ export default function DepartmentTable() {
                 <td>{d.Dept_Id}</td>
                 <td>{d.Department_Name}</td>
                 <td>{d.Department_Head || "-"}</td>
-                <td>{d.Total_Employee || 0}</td>
+                <td>
+                  <span className="badge bg-success">{d.Total_Employee || 0}</span>
+                  {/* ✅ Green badge to show it's auto-maintained by triggers */}
+                </td>
                 <td className="text-center">
                   <div className="d-flex justify-content-center gap-2">
                     <Button size="sm" variant="primary" onClick={() => openEdit(d)}>Edit</Button>
@@ -401,19 +421,16 @@ export default function DepartmentTable() {
                 value={form.Department_Name} 
                 onChange={handleChange}
                 isInvalid={!!validationErrors.Department_Name}
-                disabled={saveLoading || (editing && true)} // 🛠️ Disabled on edit mode to prevent changing department name
+                disabled={saveLoading || (editing && true)}
               >
-                {/* 🛠️ UPDATED: Use the new availableDepartments state */}
                 <option value="">Select a department</option>
                 {editing ? (
-                  // For editing, show only the current name + other available
                   availableDepartments.map(dept => (
                     <option key={dept.value} value={dept.value}>
                       {dept.label}
                     </option>
                   ))
                 ) : (
-                  // For adding, show only available departments
                   availableDepartments.map(dept => (
                     <option key={dept.value} value={dept.value}>
                       {dept.label}
@@ -447,26 +464,23 @@ export default function DepartmentTable() {
               )}
             </Form.Group>
 
-            <Form.Group className="mb-3" controlId="deptTotal">
-              <Form.Label>
-                Total Employees
-              </Form.Label>
-              <Form.Control 
-                type="number" 
-                name="Total_Employee" 
-                value={form.Total_Employee} 
-                onChange={handleChange}
-                placeholder="Enter total employees"
-                min="0"
-                isInvalid={!!validationErrors.Total_Employee}
-                disabled={saveLoading}
-              />
-              {validationErrors.Total_Employee && (
-                <div className="text-danger small mt-1">
-                  {validationErrors.Total_Employee}
+            {/* ✅ Show current employee count when editing */}
+            {editing && (
+              <Form.Group className="mb-3">
+                <Form.Label>Current Total Employees</Form.Label>
+                <div className="p-2 bg-light border rounded">
+                  <span className="badge bg-success me-2">{editing.Total_Employee || 0}</span>
+                  <small className="text-muted">
+                    (Automatically maintained by database)
+                  </small>
                 </div>
-              )}
-            </Form.Group>
+              </Form.Group>
+            )}
+
+            <div className="alert alert-info small">
+              <i className="fas fa-info-circle me-2"></i>
+              Employee counts are automatically updated when employees are added, removed, or transferred between departments.
+            </div>
           </Modal.Body>
           <Modal.Footer>
             <Button variant="secondary" onClick={closeModal} disabled={saveLoading}>
