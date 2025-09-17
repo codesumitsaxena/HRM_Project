@@ -4,7 +4,6 @@ const bodyParser = require("body-parser");
 const dotenv = require("dotenv");
 
 dotenv.config();  
-
 const authRoutes = require("./routes/authRoutes");
 const departmentRoutes = require("./routes/departmentRoutes");
 const employeeRoutes = require("./routes/employeeRoutes");

@@ -69,7 +69,7 @@ const Sidebar = ({ onMenuClick, activeItem, show, onHide }) => {
       {/* Navigation Menu */}
       <Nav className="flex-column p-2">
         <div className="mb-3">
-          <div className="text-muted small fw-semibold px-3 py-2 text-uppercase">Main Menu</div>
+          <div className="text-muted small fw-semibold px-3 py-2 text-uppercase">Menu</div>
           {menuItems.map((item) => (
             <Nav.Link
               key={item.id}
