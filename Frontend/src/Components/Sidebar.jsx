@@ -4,10 +4,8 @@ import {
   FileText, BarChart3, Settings, Shield, LogOut, 
   ChevronDown, ChevronRight, Menu, X, Plus, UserCircle 
 } from 'lucide-react';
-// Import your existing EmployeeTable component
 import EmployeeTable from '../Components/EmployeeTable';
 import DepartmentTable from '../Components/DepartmentTable'
-// Dashboard Component
 const Dashboard = () => {
   return (
     <div>
@@ -53,7 +51,6 @@ const Dashboard = () => {
   );
 };
 
-// Generic Component for other pages
 const GenericPage = ({ title }) => {
   return (
     <div className="bg-white rounded shadow-sm p-4">
@@ -389,14 +386,14 @@ const Sidebar = () => {
     <div className="d-flex" style={{ minHeight: '100vh' }}>
       {/* Sidebar */}
       <div
-        className={`bg-white shadow-lg transition-all ${
+        className={`bg-white mt-5 pt-4 shadow-lg transition-all ${
           isCollapsed ? 'sidebar-collapsed' : 'sidebar-expanded'
         }`}
         style={{
           width: isCollapsed ? '70px' : '280px',
           transition: 'width 0.3s ease',
           position: 'fixed',
-          height: '100vh',
+          height: '94vh',
           overflowY: 'auto',
           zIndex: 1000
         }}
@@ -439,7 +436,7 @@ const Sidebar = () => {
         </div>
 
         {/* Logout */}
-        <div className="position-absolute bottom-0 w-100 p-2 border-top bg-light">
+        <div className="position-absolute bottom- w-100 p-2 border-top bg-light">
           <div className="d-flex align-items-center p-2 text-danger cursor-pointer hover-bg-light rounded">
             <LogOut size={18} className="me-2" />
             {!isCollapsed && <span>Logout</span>}
@@ -456,7 +453,7 @@ const Sidebar = () => {
           padding: '20px'
         }}
       >
-        <div className="container-fluid">
+        <div className="container-fluid mt-5 pt-4">
           <div className="row">
             <div className="col-12">
               {renderContent()}

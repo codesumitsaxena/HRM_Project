@@ -42,27 +42,29 @@ function Login() {
           return;
         }
 
-        await axios.post("http://localhost:3000/api/auth/register", {
-          name: formData.name,
-          email: formData.email,
-          password: formData.password,
+        // Fixed backend route for signup
+        await axios.post("http://localhost:3000/api/auth/signup", {
+          Full_Name: formData.name,
+          Email: formData.email,
+          Password: formData.password,
         });
 
         alert("Registration successful! Please log in.");
         setIsSignup(false);
       } else {
         const res = await axios.post("http://localhost:3000/api/auth/login", {
-          email: formData.email,
-          password: formData.password,
+          Email: formData.email,
+          Password: formData.password,
         });
 
+        // Save token and user info
         localStorage.setItem("token", res.data.token);
-        localStorage.setItem("user", JSON.stringify(res.data.user));
+        localStorage.setItem("user", JSON.stringify({ role: res.data.role, name: res.data.name }));
         navigate("/dashboard");
       }
     } catch (err) {
       console.error(err);
-      setError(err.response?.data?.message || "Something went wrong.");
+      setError(err.response?.data?.msg || "Something went wrong.");
     }
   };
 

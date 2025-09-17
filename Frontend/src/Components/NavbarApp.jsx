@@ -40,13 +40,15 @@ const NavbarTop = () => {
 
   return (
     <Navbar 
-      expand="lg" 
-      className="sticky-top bg-white z-5 shadow-sm border-bottom"
-      style={{
-        background: "linear-gradient(to bottom right, #3fe2cd47, #ffffff42)",
-        minHeight: "70px", // just example
-      }}
-    >
+  expand="lg" 
+  fixed="top"
+  className="bg-white z-5 shadow-sm border-bottom"
+  style={{
+    background: "linear-gradient(to bottom right, #3fe2cd47, #ffffff42)",
+    minHeight: "70px",
+  }}
+>
+
       <Container fluid className="px-4">
         {/* Logo Section */}
         <Navbar.Brand className="d-flex align-items-center me-4">

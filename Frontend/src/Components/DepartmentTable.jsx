@@ -11,6 +11,9 @@ const DepartmentTable = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
+  // Predefined department names
+  const allDepartmentNames = ['IT', 'HR', 'Marketing', 'Finance', 'Operations'];
+
   // Fetch departments from API
   useEffect(() => {
     fetchDepartments();
@@ -46,6 +49,7 @@ const DepartmentTable = () => {
   const [formData, setFormData] = useState({
     Dept_Id: '',
     Department_Name: '',
+    Department_Head: '',
     Department_Total_Employee: ''
   });
 
@@ -57,6 +61,19 @@ const DepartmentTable = () => {
     '100+'
   ];
 
+  // Get available department names (exclude already existing ones)
+  const getAvailableDepartmentNames = () => {
+    const existingNames = departments.map(dept => dept.Department_Name);
+    // If editing, allow the current department's name to be selected
+    if (editingDepartment) {
+      return allDepartmentNames.filter(name => 
+        name === editingDepartment.Department_Name || !existingNames.includes(name)
+      );
+    }
+    // For new departments, only show names that don't exist yet
+    return allDepartmentNames.filter(name => !existingNames.includes(name));
+  };
+
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
@@ -66,6 +83,7 @@ const DepartmentTable = () => {
     setFormData({
       Dept_Id: '',
       Department_Name: '',
+      Department_Head: '',
       Department_Total_Employee: ''
     });
     setError('');
@@ -102,7 +120,7 @@ const DepartmentTable = () => {
       
       if (editingDepartment) {
         // Update existing department
-        response = await fetch(`http://localhost:3000/departments/${editingDepartment.id}`, {
+        response = await fetch(`http://localhost:3000/departments/${editingDepartment.Dept_Id}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -148,27 +166,36 @@ const DepartmentTable = () => {
     }
   };
 
-  const handleDelete = async (id, deptName) => {
-    if (window.confirm(`Are you sure you want to delete the department "${deptName}"? This action cannot be undone.`)) {
+  const handleDelete = async (Dept_Id, deptName) => {
+    if (window.confirm(`Are you sure you want to delete the department "${deptName}"?`)) {
       setLoading(true);
       setError('');
-      
+  
       try {
-        const response = await fetch(`http://localhost:3000/departments/${id}`, {
-          method: 'DELETE',
+        const response = await fetch(`http://localhost:3000/departments/${Dept_Id}`, {
+          method: "DELETE",
         });
-
-        if (!response.ok) {
-          throw new Error('Failed to delete department');
+  
+        // Check if the response is JSON before parsing
+        const contentType = response.headers.get("content-type");
+        if (contentType && contentType.indexOf("application/json") !== -1) {
+          const errorData = await response.json(); // ✅ Parse the JSON response
+          if (!response.ok) {
+            throw new Error(errorData.message || 'Failed to delete department');
+          }
+        } else {
+          // Handle non-JSON responses (e.g., from a 404 page)
+          if (!response.ok) {
+            throw new Error('Failed to delete department: ' + response.statusText);
+          }
         }
-
-        setDepartments(departments.filter(dept => dept.id !== id));
+  
+        setDepartments(departments.filter(dept => dept.Dept_Id !== Dept_Id));
         setSuccess('Department deleted successfully!');
-        
-        // Clear success message after 3 seconds
         setTimeout(() => setSuccess(''), 3000);
-        
+  
       } catch (err) {
+        // ✅ Now this will show the specific error from the backend
         setError('Error deleting department: ' + err.message);
       } finally {
         setLoading(false);
@@ -178,7 +205,7 @@ const DepartmentTable = () => {
 
   const handleExport = () => {
     const csvContent = [
-      ['Department ID', 'Department Name', 'Total Employees', 'Employee Range'].join(','),
+      ['Department ID', 'Department Name', 'Total Employees', 'Department_Head'].join(','),
       ...filteredDepartments.map(dept => [
         dept.Dept_Id || '',
         dept.Department_Name || '',
@@ -536,18 +563,20 @@ const DepartmentTable = () => {
                     <Edit3 size={14} />
                   </button>
                   <button 
-                    className="btn btn-sm flex-fill"
-                    style={{
-                      background: "linear-gradient(45deg, #dc3545, #c82333)",
-                      color: "white",
-                      border: "none",
-                      borderRadius: "6px"
-                    }}
-                    onClick={() => handleDelete(dept.id, dept.Department_Name)}
-                    disabled={loading}
-                  >
-                    <Trash2 size={14} />
-                  </button>
+  className="btn btn-sm flex-fill"
+  style={{
+    background: "linear-gradient(45deg, #dc3545, #c82333)",
+    color: "white",
+    border: "none",
+    borderRadius: "6px",
+    cursor: loading ? "not-allowed" : "pointer"
+  }}
+  onClick={() => handleDelete(dept.Dept_Id, dept.Department_Name)}
+  disabled={loading}
+>
+  <Trash2 size={14} />
+</button>
+
                 </div>
               </div>
             </div>
@@ -573,8 +602,8 @@ const DepartmentTable = () => {
                     <tr>
                       <th className="border-0 px-4 py-3" style={{ color: "#2c5f5d" }}>Department ID</th>
                       <th className="border-0 px-4 py-3" style={{ color: "#2c5f5d" }}>Department Name</th>
+                      <th className="border-0 px-4 py-3" style={{ color: "#2c5f5d" }}>Department Head</th>
                       <th className="border-0 px-4 py-3" style={{ color: "#2c5f5d" }}>Total Employees</th>
-                      <th className="border-0 px-4 py-3" style={{ color: "#2c5f5d" }}>Employee Range</th>
                       <th className="border-0 px-4 py-3 text-center" style={{ color: "#2c5f5d" }}>Actions</th>
                     </tr>
                   </thead>
@@ -592,25 +621,19 @@ const DepartmentTable = () => {
                             {dept.Department_Name}
                           </div>
                         </td>
+                        <td className="px-4 py-3">
+                        <div className="d-flex align-items-center">
+                            <Users size={16} className="me-2" style={{ color: "#3fe2cd" }} />
+                            <span className="fw-bold">{dept.Department_Head || 0}</span>
+                          </div>
+                        </td>
                         <td className="px-4 py-3" style={{ color: "#2c5f5d" }}>
                           <div className="d-flex align-items-center">
                             <Users size={16} className="me-2" style={{ color: "#3fe2cd" }} />
-                            <span className="fw-bold">{dept.Department_Total_Employee || 0}</span>
+                            <span className="fw-bold">{dept.Total_Employee || 0}</span>
                           </div>
                         </td>
-                        <td className="px-4 py-3">
-                          <span 
-                            className="badge"
-                            style={{
-                              background: "linear-gradient(45deg, #3fe2cd, #2c5f5d)",
-                              color: "white",
-                              borderRadius: "20px",
-                              padding: "5px 12px"
-                            }}
-                          >
-                            {getEmployeeRangeFilter(dept.Department_Total_Employee) || 'Not Set'}
-                          </span>
-                        </td>
+                       
                         
                         <td className="px-4 py-3 text-center">
                           <div className="d-flex gap-1 justify-content-center">
@@ -812,14 +835,46 @@ const DepartmentTable = () => {
                         <Building2 size={16} className="me-1" />
                         Department Name *
                       </label>
-                      <input
-                        type="text"
+                      <select
                         className="form-control"
                         name="Department_Name"
                         value={formData.Department_Name}
                         onChange={handleChange}
-                        placeholder="Enter Department Name"
                         required
+                        disabled={loading}
+                        style={{
+                          border: "2px solid #e9ecef",
+                          borderRadius: "8px",
+                          padding: "10px 12px"
+                        }}
+                      >
+                        <option value="">Select Department Name</option>
+                        {getAvailableDepartmentNames().map(name => (
+                          <option key={name} value={name}>{name}</option>
+                        ))}
+                      </select>
+                      {getAvailableDepartmentNames().length === 0 && (
+                        <div className="form-text text-warning">
+                          All department names have been used. Please edit existing departments if needed.
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <div className="row">
+                  <div className="col-md-6">
+                    <div className="mb-3">
+                      <label className="form-label fw-bold" style={{ color: "#2c5f5d" }}>
+                        <Users size={16} className="me-1" />
+                        Department Head
+                      </label>
+                      <input
+                        type="text"
+                        className="form-control"
+                        name="Department_Head"
+                        value={formData.Department_Head}
+                        onChange={handleChange}
+                        placeholder="Enter Department Head Name"
                         disabled={loading}
                         style={{
                           border: "2px solid #e9ecef",
@@ -829,9 +884,7 @@ const DepartmentTable = () => {
                       />
                     </div>
                   </div>
-                </div>
-                <div className="row">
-                  <div className="col-md-12">
+                  <div className="col-md-6">
                     <div className="mb-3">
                       <label className="form-label fw-bold" style={{ color: "#2c5f5d" }}>
                         <Users size={16} className="me-1" />
@@ -1013,6 +1066,25 @@ const DepartmentTable = () => {
                     <div className="mb-3">
                       <label className="form-label fw-bold" style={{ color: "#2c5f5d" }}>
                         <Users size={16} className="me-1" />
+                        Department Head
+                      </label>
+                      <div 
+                        className="p-3"
+                        style={{ 
+                          color: "#5a6c6b", 
+                          background: "linear-gradient(135deg, #f8f9fa, #e9ecef)",
+                          borderRadius: "8px",
+                          border: "1px solid #e9ecef"
+                        }}
+                      >
+                        <span className="fw-bold">{viewingDepartment.Department_Head || 'Not Assigned'}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="col-md-6">
+                    <div className="mb-3">
+                      <label className="form-label fw-bold" style={{ color: "#2c5f5d" }}>
+                        <Users size={16} className="me-1" />
                         Total Employees
                       </label>
                       <div 
@@ -1031,7 +1103,10 @@ const DepartmentTable = () => {
                       </div>
                     </div>
                   </div>
-                  <div className="col-md-6">
+                </div>
+                
+                <div className="row">
+                  <div className="col-md-12">
                     <div className="mb-3">
                       <label className="form-label fw-bold" style={{ color: "#2c5f5d" }}>
                         <Hash size={16} className="me-1" />
