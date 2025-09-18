@@ -23,19 +23,83 @@ const DepartmentTable = () => {
     setLoading(true);
     setError('');
     try {
-      const response = await fetch("http://localhost:3000/departments");
-      if (!response.ok) {
-        throw new Error('Failed to fetch departments');
+      const token = localStorage.getItem("token");
+      
+      // Check if token exists
+      if (!token) {
+        throw new Error('No authentication token found. Please login again.');
       }
+  
+      const response = await fetch("http://localhost:3000/departments", {
+        method: 'GET', // Explicitly specify method
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+      });
+  
+      // Handle different response scenarios
+      if (response.status === 401) {
+        // Token expired or invalid
+        localStorage.removeItem('token');
+        throw new Error('Session expired. Please login again.');
+      }
+  
+      if (response.status === 403) {
+        // Debug user role before throwing error
+        const token = localStorage.getItem('token');
+        if (token) {
+          try {
+            const base64Url = token.split('.')[1];
+            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => 
+              '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+            const decoded = JSON.parse(jsonPayload);
+            console.error('User Role:', decoded.Role, 'User ID:', decoded.User_Id);
+          } catch (e) {
+            console.error('Could not decode token for debugging');
+          }
+        }
+        throw new Error(`Access forbidden. Your role doesn't have permission to view departments. Please contact an administrator.`);
+      }
+  
+      if (!response.ok) {
+        // Try to get error message from response
+        let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorData.message || errorMessage;
+        } catch (parseError) {
+          // If response is not JSON, use status text
+          console.warn('Could not parse error response:', parseError);
+        }
+        throw new Error(errorMessage);
+      }
+  
       const data = await response.json();
+      
+      // Validate response data
+      if (!Array.isArray(data)) {
+        throw new Error('Invalid response format: expected array of departments');
+      }
+  
       setDepartments(data);
+      
     } catch (err) {
-      setError("Error fetching departments: " + err.message);
       console.error("Error fetching departments:", err);
+      setError(err.message);
+      
+      // If it's an auth error, you might want to redirect to login
+      if (err.message.includes('login again') || err.message.includes('Session expired')) {
+        // Optional: redirect to login page
+        // window.location.href = '/login';
+      }
+      
     } finally {
       setLoading(false);
     }
   };
+  
 
   const [search, setSearch] = useState('');
   const [showModal, setShowModal] = useState(false);
@@ -50,7 +114,7 @@ const DepartmentTable = () => {
     Dept_Id: '',
     Department_Name: '',
     Department_Head: '',
-    Department_Total_Employee: ''
+    Total_Employee: ''
   });
 
   const employeeRanges = [
@@ -84,7 +148,7 @@ const DepartmentTable = () => {
       Dept_Id: '',
       Department_Name: '',
       Department_Head: '',
-      Department_Total_Employee: ''
+      Total_Employee: ''
     });
     setError('');
     setSuccess('');
@@ -106,24 +170,27 @@ const DepartmentTable = () => {
 
   const handleSave = async () => {
     // Validation
-    if (!formData.Dept_Id || !formData.Department_Name) {
-      setError('Please fill in all required fields (Department ID and Name)');
+    if (!editingDepartment && departments.some(d => d.Department_Name === formData.Department_Name)) {
+      setError('Department name already exists');
       return;
     }
-
+    
+  
     setLoading(true);
     setError('');
     setSuccess('');
-
+  
     try {
+      const token = localStorage.getItem("token"); // ✅ get token
       let response;
-      
+  
       if (editingDepartment) {
         // Update existing department
         response = await fetch(`http://localhost:3000/departments/${editingDepartment.Dept_Id}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`, // ✅ send token
           },
           body: JSON.stringify(formData),
         });
@@ -133,38 +200,40 @@ const DepartmentTable = () => {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`, // ✅ send token
           },
           body: JSON.stringify(formData),
         });
       }
-
+  
       if (!response.ok) {
-        throw new Error('Failed to save department');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to save department');
       }
-
+  
       const savedDepartment = await response.json();
-      
+  
       if (editingDepartment) {
-        setDepartments(departments.map(dept => 
-          dept.id === editingDepartment.id ? savedDepartment : dept
+        setDepartments(departments.map(dept =>
+          dept.Dept_Id === editingDepartment.Dept_Id ? savedDepartment : dept
         ));
         setSuccess('Department updated successfully!');
       } else {
         setDepartments([...departments, savedDepartment]);
         setSuccess('Department created successfully!');
       }
-
+  
       setShowModal(false);
-      
-      // Clear success message after 3 seconds
+  
       setTimeout(() => setSuccess(''), 3000);
-      
+  
     } catch (err) {
       setError('Error saving department: ' + err.message);
     } finally {
       setLoading(false);
     }
   };
+  
 
   const handleDelete = async (Dept_Id, deptName) => {
     if (window.confirm(`Are you sure you want to delete the department "${deptName}"?`)) {
@@ -172,14 +241,20 @@ const DepartmentTable = () => {
       setError('');
   
       try {
+        const token = localStorage.getItem("token"); // ✅ Add this line
+  
         const response = await fetch(`http://localhost:3000/departments/${Dept_Id}`, {
           method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`, // ✅ Add this line
+          },
         });
   
         // Check if the response is JSON before parsing
         const contentType = response.headers.get("content-type");
         if (contentType && contentType.indexOf("application/json") !== -1) {
-          const errorData = await response.json(); // ✅ Parse the JSON response
+          const errorData = await response.json();
           if (!response.ok) {
             throw new Error(errorData.message || 'Failed to delete department');
           }
@@ -195,7 +270,6 @@ const DepartmentTable = () => {
         setTimeout(() => setSuccess(''), 3000);
   
       } catch (err) {
-        // ✅ Now this will show the specific error from the backend
         setError('Error deleting department: ' + err.message);
       } finally {
         setLoading(false);
@@ -209,8 +283,8 @@ const DepartmentTable = () => {
       ...filteredDepartments.map(dept => [
         dept.Dept_Id || '',
         dept.Department_Name || '',
-        dept.Department_Total_Employee || 0,
-        getEmployeeRangeFilter(dept.Department_Total_Employee) || 'Not Set'
+        dept.Total_Employee || 0,
+        getEmployeeRangeFilter(dept.Total_Employee) || 'Not Set'
       ].join(','))
     ].join('\n');
 
@@ -238,7 +312,7 @@ const DepartmentTable = () => {
     const searchText = `${dept.Department_Name || ''} ${dept.Dept_Id || ''}`.toLowerCase();
     const matchesSearch = searchText.includes(search.toLowerCase());
     const matchesEmployeeRange = filterEmployeeRange === '' || 
-      getEmployeeRangeFilter(dept.Department_Total_Employee) === filterEmployeeRange;
+      getEmployeeRangeFilter(dept.Total_Employee) === filterEmployeeRange;
     return matchesSearch && matchesEmployeeRange;
   });
 
@@ -529,11 +603,11 @@ const DepartmentTable = () => {
                 </div>
                 <p className="small mb-1" style={{ color: "#5a6c6b" }}>
                   <Users size={14} className="me-1" />
-                  Total Employees: {dept.Department_Total_Employee || 0}
+                  Total Employees: {dept.Total_Employee || 0}
                 </p>
                 <p className="small mb-3" style={{ color: "#5a6c6b" }}>
                   <Hash size={14} className="me-1" />
-                  Range: {getEmployeeRangeFilter(dept.Department_Total_Employee) || 'Not Set'}
+                  Range: {getEmployeeRangeFilter(dept.Total_Employee) || 'Not Set'}
                 </p>
                 <div className="d-flex gap-2">
                   <button 
@@ -679,7 +753,7 @@ const DepartmentTable = () => {
                                 width: "32px",
                                 height: "32px"
                               }}
-                              onClick={() => handleDelete(dept.id, dept.Department_Name)}
+                              onClick={() => handleDelete(dept.Dept_Id, dept.Department_Name)}
                               disabled={loading}
                               title="Delete Department"
                             >
@@ -893,8 +967,8 @@ const DepartmentTable = () => {
                       <input
                         type="number"
                         className="form-control"
-                        name="Department_Total_Employee"
-                        value={formData.Department_Total_Employee}
+                        name="Total_Employee"
+                        value={formData.Total_Employee}
                         onChange={handleChange}
                         placeholder="Enter Total Number of Employees"
                         min="0"
@@ -1097,7 +1171,7 @@ const DepartmentTable = () => {
                         }}
                       >
                         <span className="fw-bold fs-5" style={{ color: "#3fe2cd" }}>
-                          {viewingDepartment.Department_Total_Employee || '0'}
+                          {viewingDepartment.Total_Employee || '0'}
                         </span>
                         <span className="ms-1">Employees</span>
                       </div>
@@ -1123,7 +1197,7 @@ const DepartmentTable = () => {
                             fontSize: "0.9rem"
                           }}
                         >
-                          {getEmployeeRangeFilter(viewingDepartment.Department_Total_Employee) || 'Not Set'}
+                          {getEmployeeRangeFilter(viewingDepartment.Total_Employee) || 'Not Set'}
                         </span>
                       </div>
                     </div>
@@ -1160,10 +1234,10 @@ const DepartmentTable = () => {
                           </div>
                           <div>
                             <div className="fw-bold" style={{ color: "#2c5f5d", fontSize: "1.2rem" }}>
-                              {viewingDepartment.Department_Total_Employee > 0 ? 'Active Department' : 'New Department'}
+                              {viewingDepartment.Total_Employee > 0 ? 'Active Department' : 'New Department'}
                             </div>
                             <small className="text-muted">
-                              {viewingDepartment.Department_Total_Employee > 0 
+                              {viewingDepartment.Total_Employee > 0 
                                 ? 'Has assigned employees' 
                                 : 'No employees assigned yet'
                               }
@@ -1191,7 +1265,7 @@ const DepartmentTable = () => {
                         <small>
                           <strong>Department ID:</strong> {viewingDepartment.Dept_Id} | 
                           <strong className="ms-2">Created:</strong> {new Date().toLocaleDateString()} |
-                          <strong className="ms-2">Type:</strong> {getEmployeeRangeFilter(viewingDepartment.Department_Total_Employee) || 'Startup'}
+                          <strong className="ms-2">Type:</strong> {getEmployeeRangeFilter(viewingDepartment.Total_Employee) || 'Startup'}
                         </small>
                       </div>
                     </div>

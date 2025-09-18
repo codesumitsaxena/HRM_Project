@@ -7,29 +7,36 @@ import {
 } from 'lucide-react';
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
- 
 
 const EmployeeTable = () => {
   const [employees, setEmployees] = useState([]);
-  const [saving, setSaving] = useState(false); // ADD THIS LINE
+  const [saving, setSaving] = useState(false);
   
   useEffect(() => {
-    fetch("http://localhost:3000/employees")
-      .then((res) => res.json())
-      .then((data) => setEmployees(data))
-      .catch((err) => console.error("Error fetching employees:", err));
+    fetchEmployees();
   }, []);
-
+  
   const fetchEmployees = async () => {
     try {
-      const response = await fetch("http://localhost:3000/employees");
+      const token = localStorage.getItem("token");
+      console.log("Using token:", token);
+  
+      const response = await fetch("http://localhost:3000/employees", {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+  
       const data = await response.json();
-      setEmployees(data);
+      console.log("API Response:", data);
+  
+      setEmployees(Array.isArray(data) ? data : data.employees || []);
     } catch (err) {
       console.error("Error fetching employees:", err);
+      setEmployees([]);
     }
   };
-  
 
   const [search, setSearch] = useState('');
   const [showModal, setShowModal] = useState(false);
@@ -64,13 +71,13 @@ const EmployeeTable = () => {
     saveAs(fileData, "employeeTable.xlsx");
   };
 
-
+  // FIXED: Changed department IDs to match database (integer values)
   const departments = [
-    { id: 'DEPT001', name: 'IT' },
-    { id: 'DEPT002', name: 'HR' },
-    { id: 'DEPT003', name: 'Marketing' },
-    { id: 'DEPT004', name: 'Finance' },
-    { id: 'DEPT005', name: 'Operations' }
+    { id: 1, name: 'IT' },
+    { id: 2, name: 'HR' },
+    { id: 3, name: 'Marketing' },
+    { id: 4, name: 'Finance' },
+    { id: 5, name: 'Operations' }
   ];
 
   const designations = [
@@ -123,24 +130,37 @@ const EmployeeTable = () => {
   const handleSave = async () => {
     setSaving(true);
     try {
-      // 👉 Format Join_Date and Department_Id before sending
+      // Format data properly
       const formattedData = {
         ...formData,
         Join_Date: formData.Join_Date
-          ? new Date(formData.Join_Date).toISOString().split("T")[0] // yyyy-mm-dd
+          ? new Date(formData.Join_Date).toISOString().split("T")[0]
           : null,
-        Department_Id: formData.Department_Id
-          ? parseInt(formData.Department_Id.replace("DEPT", ""), 10) // "DEPT003" -> 3
-          : null,
+        Department_Id: formData.Department_Id ? parseInt(formData.Department_Id) : null,
+        Basic_Salary: formData.Basic_Salary ? parseFloat(formData.Basic_Salary) : null
       };
+
+      // FIXED: Added validation for Department_Id
+      if (!formattedData.Department_Id) {
+        alert("Please select a department");
+        setSaving(false);
+        return;
+      }
+
+      console.log("Sending data:", formattedData);
+      console.log("Department_Id value:", formattedData.Department_Id, typeof formattedData.Department_Id);
+  
+      const token = localStorage.getItem("token");
   
       if (editingEmployee) {
-        // Update existing employee (PUT /:id)
         const response = await fetch(
           `http://localhost:3000/employees/${editingEmployee.Employee_Id}`,
           {
             method: "PUT",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
             body: JSON.stringify(formattedData),
           }
         );
@@ -154,10 +174,12 @@ const EmployeeTable = () => {
           alert(`Failed to update employee: ${errorData.error || "Unknown error"}`);
         }
       } else {
-        // Add new employee (POST /)
         const response = await fetch("http://localhost:3000/employees", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
           body: JSON.stringify(formattedData),
         });
   
@@ -177,26 +199,31 @@ const EmployeeTable = () => {
       setSaving(false);
     }
   };
-  
-  
-  
-  
-  
-
   const handleDelete = async (employeeId) => {
     if (!window.confirm('Are you sure you want to delete this employee?')) {
       return;
     }
-    
+  
     try {
+      const token = localStorage.getItem("token"); // Get token from storage
+  
+      if (!token) {
+        alert("You are not logged in.");
+        return;
+      }
+  
       const response = await fetch(`http://localhost:3000/employees/${employeeId}`, {
         method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}` // <-- send token here
+        }
       });
   
       if (response.ok) {
         console.log("Employee deleted successfully!");
         alert("Employee deleted successfully!");
-        await fetchEmployees(); // Add this line to refresh the list
+        await fetchEmployees();
       } else {
         const contentType = response.headers.get("content-type");
         if (contentType && contentType.includes("application/json")) {
@@ -213,17 +240,18 @@ const EmployeeTable = () => {
       alert("Error deleting employee. Please try again. Check server connection.");
     }
   };
+  
 
-
+  // FIXED: Updated getDepartmentName to use integer IDs
   const getDepartmentName = (deptId) => {
-    const dept = departments.find(d => d.id === deptId);
-    return dept ? dept.name : deptId;
+    const dept = departments.find(d => d.id == deptId);
+    return dept ? dept.name : `Dept ${deptId}`;
   };
 
   const filteredEmployees = employees.filter(emp => {
     const searchText = `${emp.First_Name || ''} ${emp.Last_Name || ''} ${emp.Employee_Id || ''}`.toLowerCase();
     const matchesSearch = searchText.includes(search.toLowerCase());
-    const matchesDepartment = filterDepartment === '' || emp.Department_Id === filterDepartment;
+    const matchesDepartment = filterDepartment === '' || emp.Department_Id == filterDepartment;
     const matchesDesignation = filterDesignation === '' || emp.Designation === filterDesignation;
     return matchesSearch && matchesDepartment && matchesDesignation;
   });
@@ -380,7 +408,7 @@ const EmployeeTable = () => {
       <div className="d-md-none">
         {currentEmployees.map((emp) => (
           <div 
-            key={emp.id}
+            key={emp.Employee_Id}
             className="card mb-3"
             style={{
               background: "linear-gradient(135deg, #ffffff90, #3fe2cd15)",
@@ -445,7 +473,8 @@ const EmployeeTable = () => {
                     border: "none",
                     borderRadius: "6px"
                   }}
-                  onClick={() => handleDelete(emp.Employee_Id)}                >
+                  onClick={() => handleDelete(emp.Employee_Id)}
+                >
                   <Trash2 size={14} />
                 </button>
               </div>
@@ -472,7 +501,7 @@ const EmployeeTable = () => {
                     <th className="border-0 px-4 py-3" style={{ color: "#2c5f5d" }}>Employee</th>
                     <th className="border-0 px-4 py-3" style={{ color: "#2c5f5d" }}>ID</th>
                     <th className="border-0 px-4 py-3" style={{ color: "#2c5f5d" }}>Contact</th>
-                    <th className="border-0 px-4 py-3" style={{ color: "#2c5f5d" }}>Department Id</th>
+                    <th className="border-0 px-4 py-3" style={{ color: "#2c5f5d" }}>Department</th>
                     <th className="border-0 px-4 py-3" style={{ color: "#2c5f5d" }}>Join Date</th>
                     <th className="border-0 px-4 py-3" style={{ color: "#2c5f5d" }}>Salary</th>
                     <th className="border-0 px-4 py-3 text-center" style={{ color: "#2c5f5d" }}>Actions</th>
@@ -480,7 +509,7 @@ const EmployeeTable = () => {
                 </thead>
                 <tbody>
                   {currentEmployees.map((emp) => (
-                    <tr key={emp.id} style={{ borderBottom: "1px solid rgba(63, 226, 205, 0.1)" }}>
+                    <tr key={emp.Employee_Id} style={{ borderBottom: "1px solid rgba(63, 226, 205, 0.1)" }}>
                       <td className="px-4 py-3">
                         <div>
                           <div className="fw-bold" style={{ color: "#2c5f5d" }}>
@@ -505,7 +534,6 @@ const EmployeeTable = () => {
                       <td className="px-4 py-3" style={{ color: "#2c5f5d" }}>
                         {emp.Basic_Salary ? `₹${parseInt(emp.Basic_Salary).toLocaleString()}` : 'N/A'}
                       </td>
-                      
                       <td className="px-4 py-3 text-center">
                         <div className="d-flex gap-1 justify-content-center">
                           <button 
@@ -546,7 +574,8 @@ const EmployeeTable = () => {
                               width: "32px",
                               height: "32px"
                             }}
-                            onClick={() => handleDelete(emp.Employee_Id)}                          >
+                            onClick={() => handleDelete(emp.Employee_Id)}
+                          >
                             <Trash2 size={14} />
                           </button>
                         </div>
@@ -615,7 +644,7 @@ const EmployeeTable = () => {
         </div>
       )}
 
-      {/* Add/Edit Modal - NON-TRANSPARENT */}
+      {/* Add/Edit Modal */}
       {showModal && (
         <div 
           className="modal show d-block" 
@@ -649,6 +678,7 @@ const EmployeeTable = () => {
                 <button 
                   className="btn-close btn-close-white" 
                   onClick={() => setShowModal(false)}
+                  disabled={saving}
                 ></button>
               </div>
               <div className="modal-body p-4" style={{ background: "#ffffff" }}>
@@ -667,6 +697,7 @@ const EmployeeTable = () => {
                         onChange={handleChange}
                         placeholder="Enter Employee ID"
                         required
+                        disabled={saving}
                         style={{
                           border: "2px solid #e9ecef",
                           borderRadius: "8px",
@@ -689,6 +720,7 @@ const EmployeeTable = () => {
                         onChange={handleChange}
                         placeholder="Enter First Name"
                         required
+                        disabled={saving}
                         style={{
                           border: "2px solid #e9ecef",
                           borderRadius: "8px",
@@ -713,6 +745,7 @@ const EmployeeTable = () => {
                         onChange={handleChange}
                         placeholder="Enter Last Name"
                         required
+                        disabled={saving}
                         style={{
                           border: "2px solid #e9ecef",
                           borderRadius: "8px",
@@ -735,6 +768,7 @@ const EmployeeTable = () => {
                         onChange={handleChange}
                         placeholder="Enter Email Address"
                         required
+                        disabled={saving}
                         style={{
                           border: "2px solid #e9ecef",
                           borderRadius: "8px",
@@ -759,6 +793,7 @@ const EmployeeTable = () => {
                         onChange={handleChange}
                         placeholder="Enter Phone Number"
                         required
+                        disabled={saving}
                         style={{
                           border: "2px solid #e9ecef",
                           borderRadius: "8px",
@@ -780,6 +815,7 @@ const EmployeeTable = () => {
                         value={formData.Address}
                         onChange={handleChange}
                         placeholder="Enter Address"
+                        disabled={saving}
                         style={{
                           border: "2px solid #e9ecef",
                           borderRadius: "8px",
@@ -803,6 +839,7 @@ const EmployeeTable = () => {
                         value={formData.Join_Date}
                         onChange={handleChange}
                         required
+                        disabled={saving}
                         style={{
                           border: "2px solid #e9ecef",
                           borderRadius: "8px",
@@ -823,6 +860,7 @@ const EmployeeTable = () => {
                         value={formData.Designation}
                         onChange={handleChange}
                         required
+                        disabled={saving}
                         style={{
                           border: "2px solid #e9ecef",
                           borderRadius: "8px",
@@ -851,6 +889,7 @@ const EmployeeTable = () => {
                         value={formData.Basic_Salary}
                         onChange={handleChange}
                         placeholder="Enter Basic Salary"
+                        disabled={saving}
                         style={{
                           border: "2px solid #e9ecef",
                           borderRadius: "8px",
@@ -871,6 +910,7 @@ const EmployeeTable = () => {
                         value={formData.Department_Id}
                         onChange={handleChange}
                         required
+                        disabled={saving}
                         style={{
                           border: "2px solid #e9ecef",
                           borderRadius: "8px",
@@ -899,6 +939,7 @@ const EmployeeTable = () => {
                         value={formData.Image_Path}
                         onChange={handleChange}
                         placeholder="Enter Image URL or Path"
+                        disabled={saving}
                         style={{
                           border: "2px solid #e9ecef",
                           borderRadius: "8px",
@@ -920,6 +961,7 @@ const EmployeeTable = () => {
                 <button 
                   className="btn btn-secondary"
                   onClick={() => setShowModal(false)}
+                  disabled={saving}
                   style={{
                     background: "#6c757d",
                     border: "none",
@@ -932,6 +974,7 @@ const EmployeeTable = () => {
                 <button 
                   className="btn ms-2"
                   onClick={handleSave}
+                  disabled={saving}
                   style={{
                     background: "linear-gradient(45deg, #3fe2cd, #2c5f5d)",
                     color: "white",
@@ -940,7 +983,7 @@ const EmployeeTable = () => {
                     padding: "10px 20px"
                   }}
                 >
-                  {editingEmployee ? 'Update Employee' : 'Save Employee'}
+                  {saving ? 'Saving...' : (editingEmployee ? 'Update Employee' : 'Save Employee')}
                 </button>
               </div>
             </div>
@@ -948,7 +991,7 @@ const EmployeeTable = () => {
         </div>
       )}
 
-      {/* View Modal - NON-TRANSPARENT */}
+      {/* View Modal */}
       {showViewModal && viewingEmployee && (
         <div 
           className="modal show d-block" 

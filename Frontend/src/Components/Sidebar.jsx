@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import EmployeeTable from '../Components/EmployeeTable';
 import DepartmentTable from '../Components/DepartmentTable'
+import LeaveRequest from '../Components/LeaveRequest'
 const Dashboard = () => {
   return (
     <div>
@@ -111,7 +112,7 @@ const Sidebar = () => {
         submenu: [
           { id: 'daily-attendance', title: 'Daily Attendance', path: '/attendance/daily', component: 'DailyAttendance' },
           { id: 'monthly-report', title: 'Monthly Reports', path: '/attendance/monthly', component: 'MonthlyAttendance' },
-          { id: 'leave-management', title: 'Leave Management', path: '/attendance/leaves', component: 'LeaveManagement' },
+          { id: 'leave-management', title: 'Leave Management', path: '/attendance/leaves', component: 'LeaveRequest' },
           { id: 'overtime', title: 'Overtime Tracking', path: '/attendance/overtime', component: 'OvertimeTracking' }
         ]
       },
@@ -199,7 +200,7 @@ const Sidebar = () => {
         hasSubmenu: true,
         submenu: [
           { id: 'daily-attendance', title: 'Daily Attendance', path: '/attendance/daily', component: 'DailyAttendance' },
-          { id: 'leave-requests', title: 'Leave Requests', path: '/attendance/leave-requests', component: 'LeaveRequests' }
+          { id: 'leave-requests', title: 'Leave Requests', path: '/attendance/leave-requests', component: 'LeaveRequest' }
         ]
       }
     ],
@@ -311,6 +312,10 @@ const Sidebar = () => {
     }
     if(activeMenu === 'departments'){
       return <DepartmentTable/>
+    }
+
+    if(activeMenu === 'leave-request'){
+      return <LeaveRequest/>
     }
 
     // For other menu items, show generic page

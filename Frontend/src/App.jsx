@@ -5,6 +5,7 @@ import Dashboard from "./Components/Dashboard";
 import Employee from "./Components/EmployeeTable";
 import Department from "./Components/DepartmentTable";
 import React from "react";
+import LeaveRequest from './Components/LeaveRequest'
 import ProtectedRoute from "./Components/ProtectedRoutes"; // Add this
 import "./App.css"; // Custom CSS
 import "bootstrap/dist/css/bootstrap.min.css"; // Bootstrap
@@ -28,7 +29,15 @@ function App() {
           </ProtectedRoute>
         }
       />
-
+      
+      <Route
+        path="/attendance/leave-request"
+        element={
+          <ProtectedRoute>
+            <LeaveRequest />
+          </ProtectedRoute>
+        }
+      />
       <Route
         path="/Employee"
         element={
