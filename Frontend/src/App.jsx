@@ -13,6 +13,7 @@ import "bootstrap-icons/font/bootstrap-icons.css"; // Bootstrap Icons
 import "@fontsource/inter/400.css"; // Inter Regular
 import "@fontsource/inter/600.css"; // Inter SemiBold
 import "@fontsource/inter/700.css"; // Inter Bold
+import AttendanceTable from './Components/AttendanceEmployee'
 
 function App() {
   return (
@@ -38,6 +39,15 @@ function App() {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/attendance"
+        element={
+          <ProtectedRoute>
+            <AttendanceTable />
+          </ProtectedRoute>
+        }
+      />
+      
       <Route
         path="/Employee"
         element={

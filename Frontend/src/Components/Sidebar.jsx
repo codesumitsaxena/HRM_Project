@@ -7,6 +7,7 @@ import {
 import EmployeeTable from '../Components/EmployeeTable';
 import DepartmentTable from '../Components/DepartmentTable'
 import LeaveRequest from '../Components/LeaveRequest'
+import AttendanceTable from '../Components/AttendanceEmployee'
 const Dashboard = () => {
   return (
     <div>
@@ -255,7 +256,7 @@ const Sidebar = () => {
         hasSubmenu: true,
         submenu: [
           { id: 'check-in-out', title: 'Check In/Out', path: '/attendance/checkin', component: 'CheckInOut' },
-          { id: 'my-attendance', title: 'Attendance History', path: '/attendance/history', component: 'AttendanceHistory' },
+          { id: 'employee-attendance', title: 'Attendance History', path: '/employee-attendance', component: 'AttendanceTable' },
           { id: 'leave-request', title: 'Leave Request', path: '/attendance/leave-request', component: 'LeaveRequest' }
         ]
       },
@@ -317,7 +318,11 @@ const Sidebar = () => {
     if(activeMenu === 'leave-request'){
       return <LeaveRequest/>
     }
+    if(activeMenu === 'employee-attendance'){
+      return <AttendanceTable/>
+    }
 
+    
     // For other menu items, show generic page
     const allMenuItems = Object.values(menuItems).flat();
     const allSubmenuItems = allMenuItems

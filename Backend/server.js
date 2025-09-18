@@ -8,6 +8,7 @@ const employeeRoutes = require('./routes/employeeRoutes');
 const leaveRoutes = require('./routes/LeaveRoutes');
 const departmentRoutes = require('./routes/department');
 const { authenticateToken } = require('./middleware/authMiddleware');
+const attendanceRoutes = require("./routes/attendenceRoutes");
 
 const app = express();
 
@@ -23,6 +24,9 @@ app.use('/api/auth', authRoutes); // Signup/Login routes
 app.use('/employees', authenticateToken, employeeRoutes);
 app.use('/leaves', authenticateToken, leaveRoutes);
 app.use('/departments', authenticateToken, departmentRoutes);
+app.use('/attendance', authenticateToken, attendanceRoutes);
+
+
 
 // Test route
 app.get('/', (req, res) => {
