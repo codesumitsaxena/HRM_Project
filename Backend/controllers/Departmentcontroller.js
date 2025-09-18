@@ -1,25 +1,29 @@
 const db = require('../config/db');
-
 // ✅ POST: Add Department
 exports.addDepartment = async (req, res) => {
-  const { Department_Name, Department_Head } = req.body;
+  const { Department_Name, Department_Head, Total_Employee } = req.body;
 
-  if (!Department_Name || !Department_Head) {
-    return res.status(400).json({ message: 'Department_Name and Department_Head are required' });
-  }
+  if (!Department_Name || !Department_Head) {
+    return res.status(400).json({ message: 'Department_Name and Department_Head are required' });
+  }
 
-  const query = `
-    INSERT INTO departments (Department_Name, Department_Head, Total_Employee)
-    VALUES (?, ?, 0)
-  `;
+  const query =
+    "INSERT INTO departments (Department_Name, Department_Head, Total_Employee) VALUES (?, ?, ?)";
 
-  try {
-    const [result] = await db.query(query, [Department_Name, Department_Head]);
-    res.status(201).json({ message: 'Department added successfully', departmentId: result.insertId });
-  } catch (err) {
-    console.error("Insert Error:", err);
-    res.status(500).json({ message: 'Database error' });
-  }
+  try {
+    const [result] = await db.query(query, [
+      Department_Name,
+      Department_Head,
+      Total_Employee || 0, // default to 0 if not provided
+    ]);
+
+    res
+      .status(201)
+      .json({ message: 'Department added successfully', departmentId: result.insertId });
+  } catch (err) {
+    console.error("Insert Error:", err);
+    res.status(500).json({ message: 'Database error' });
+  }
 };
 
 // ✅ GET: Fetch All Departments with pagination

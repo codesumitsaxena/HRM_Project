@@ -468,24 +468,31 @@ function EmployeeTable() {
                   </Form.Control.Feedback>
                 </Form.Group>
               </Col>
-              <Col md={6}>
-                <Form.Group className="mb-3">
-                  <Form.Label>
-                    Phone <span className="text-danger">*</span>
-                  </Form.Label>
-                  <Form.Control
-                    required
-                    name="Phone"
-                    value={formData.Phone}
-                    onChange={handleChange}
-                    placeholder="Enter phone number"
-                    disabled={isLoading}
-                  />
-                  <Form.Control.Feedback type="invalid">
-                    Please provide a phone number.
-                  </Form.Control.Feedback>
-                </Form.Group>
-              </Col>
+<Col md={6}>
+  <Form.Group className="mb-3">
+    <Form.Label>
+      Phone <span className="text-danger">*</span>
+    </Form.Label>
+    <Form.Control
+      required
+      type="text"
+      name="Phone"
+      value={formData.Phone}
+      onChange={(e) => {
+        // Allow only digits
+        e.target.value = e.target.value.replace(/[^0-9]/g, '');
+        handleChange(e);
+      }}
+      maxLength="10" // ✅ user cannot type more than 10
+      placeholder="Enter phone number"
+      disabled={isLoading}
+      pattern="^[0-9]{10}$" // ✅ requires exactly 10 digits at submit time
+    />
+    <Form.Control.Feedback type="invalid">
+      Phone number must be exactly 10 digits.
+    </Form.Control.Feedback>
+  </Form.Group>
+</Col>
             </Row>
 
             <Form.Group className="mb-3">
@@ -553,6 +560,7 @@ function EmployeeTable() {
                     required
                     type="number"
                     min="0"
+                    max="99000"
                     step="1"
                     name="Basic_Salary"
                     value={formData.Basic_Salary}
@@ -565,7 +573,9 @@ function EmployeeTable() {
                     disabled={isLoading}
                   />
                   <Form.Control.Feedback type="invalid">
-                    Please enter a valid salary amount.
+                    {formData.Basic_Salary > 99000
+                    ? "Salary should not be above 99000."
+                    : "Please enter a valid salary amount."}
                   </Form.Control.Feedback>
                 </Form.Group>
               </Col>
