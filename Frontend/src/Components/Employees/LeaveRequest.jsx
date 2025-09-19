@@ -918,53 +918,27 @@ const LeaveRequestTable = () => {
                     </div>
                   </div>
                 </div>
-                <div className="row">
-                  <div className="col-md-6">
-                    <div className="mb-3">
-                      <label className="form-label fw-bold" style={{ color: "#2c5f5d" }}>
-                        <Clock size={16} className="me-1" />
-                        Status *
-                      </label>
-                      <select
-                        className="form-select"
-                        name="status"
-                        value={formData.status}
-                        onChange={handleChange}
-                        required
-                        disabled={saving}
-                        style={{
-                          border: "2px solid #e9ecef",
-                          borderRadius: "8px",
-                          padding: "10px 12px"
-                        }}
-                      >
-                        {statusOptions.map(status => (
-                          <option key={status} value={status}>{status}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                  <div className="col-md-6">
-                    <div className="mb-3">
-                      <label className="form-label fw-bold" style={{ color: "#2c5f5d" }}>
-                        <Clock size={16} className="me-1" />
-                        Total Days
-                      </label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        value={calculateLeaveDays(formData.Start_Date, formData.End_Date) + ' days'}
-                        disabled
-                        style={{
-                          border: "2px solid #e9ecef",
-                          borderRadius: "8px",
-                          padding: "10px 12px",
-                          background: "#f8f9fa"
-                        }}
-                      />
-                    </div>
-                  </div>
-                </div>
+                <div className="col-md-6">
+  <div className="mb-3">
+    <label className="form-label fw-bold" style={{ color: "#2c5f5d" }}>
+      <Clock size={16} className="me-1" />
+      Status *
+    </label>
+    <input
+      type="text"
+      className="form-control"
+      value="Pending"
+      readOnly
+      style={{
+        border: "2px solid #e9ecef",
+        borderRadius: "8px",
+        padding: "10px 12px",
+        background: "#f8f9fa"
+      }}
+    />
+  </div>
+</div>
+
                 <div className="row">
                   <div className="col-md-12">
                     <div className="mb-3">

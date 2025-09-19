@@ -2,18 +2,20 @@
 import { Routes, Route } from "react-router-dom";
 import Login from "./Components/Login";
 import Dashboard from "./Components/Dashboard";
-import Employee from "./Components/EmployeeTable";
-import Department from "./Components/DepartmentTable";
+import Employee from "./Components/Employees/EmployeeTable";
+import Department from "./Components/HR/DepartmentTable";
 import React from "react";
-import LeaveRequest from './Components/LeaveRequest'
+import LeaveRequest from './Components/Employees/LeaveRequest'
 import ProtectedRoute from "./Components/ProtectedRoutes"; // Add this
 import "./App.css"; // Custom CSS
 import "bootstrap/dist/css/bootstrap.min.css"; // Bootstrap
 import "bootstrap-icons/font/bootstrap-icons.css"; // Bootstrap Icons
-import "@fontsource/inter/400.css"; // Inter Regular
+import "@fontsource/inter/400.css"; 
 import "@fontsource/inter/600.css"; // Inter SemiBold
 import "@fontsource/inter/700.css"; // Inter Bold
-import AttendanceTable from './Components/AttendanceEmployee'
+import AttendanceTable from './Components/Employees/AttendanceEmployee'
+import HRLeaveDashboard from './Components/HR/HRDashboard'
+
 
 function App() {
   return (
@@ -44,6 +46,14 @@ function App() {
         element={
           <ProtectedRoute>
             <AttendanceTable />
+          </ProtectedRoute>
+        }
+      />
+       <Route
+        path="/hr-dashboard"
+        element={
+          <ProtectedRoute>
+            <HRLeaveDashboard />
           </ProtectedRoute>
         }
       />

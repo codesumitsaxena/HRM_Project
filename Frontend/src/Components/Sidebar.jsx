@@ -4,10 +4,11 @@ import {
   FileText, BarChart3, Settings, Shield, LogOut, 
   ChevronDown, ChevronRight, Menu, X, Plus, UserCircle 
 } from 'lucide-react';
-import EmployeeTable from '../Components/EmployeeTable';
-import DepartmentTable from '../Components/DepartmentTable'
-import LeaveRequest from '../Components/LeaveRequest'
-import AttendanceTable from '../Components/AttendanceEmployee'
+import EmployeeTable from './Employees/EmployeeTable';
+import DepartmentTable from './HR/DepartmentTable'
+import LeaveRequest from './Employees/LeaveRequest'
+import AttendanceTable from './Employees/AttendanceEmployee'
+import HRLeaveDashboard from './HR/HRDashboard'
 const Dashboard = () => {
   return (
     <div>
@@ -166,7 +167,7 @@ const Sidebar = () => {
     ],
     hr: [
       {
-        id: 'dashboard',
+        id: 'HRdashboard',
         title: 'HR Dashboard',
         icon: Home,
         path: '/hr-dashboard',
@@ -321,6 +322,12 @@ const Sidebar = () => {
     if(activeMenu === 'employee-attendance'){
       return <AttendanceTable/>
     }
+    if(activeMenu === 'HRdashboard'){
+      return <HRLeaveDashboard/>
+    }
+    
+
+    
 
     
     // For other menu items, show generic page
