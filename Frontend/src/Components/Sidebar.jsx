@@ -90,7 +90,6 @@ const Sidebar = () => {
         hasSubmenu: true,
         submenu: [
           { id: 'all-employees', title: 'All Employees', path: '/employees', component: 'EmployeeTable' },
-          { id: 'add-employee', title: 'Add Employee', path: '/employees/add', component: 'EmployeeTable' },
           { id: 'employee-profiles', title: 'Employee Profiles', path: '/employees/profiles', component: 'EmployeeTable' },
           { id: 'departments', title: 'Departments', path: '/Department', component: 'DepartmentTable' },
         ]
@@ -180,7 +179,6 @@ const Sidebar = () => {
         hasSubmenu: true,
         submenu: [
           { id: 'all-employees', title: 'All Employees', path: '/employees', component: 'EmployeeTable' },
-          { id: 'add-employee', title: 'Add Employee', path: '/employees/add', component: 'EmployeeTable' },
           { id: 'employee-profiles', title: 'Employee Profiles', path: '/employees/profiles', component: 'EmployeeTable' }
         ]
       },

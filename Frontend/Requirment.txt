@@ -1,0 +1,5 @@
+package Install 
+npm Install
+
+-- npm run dev for frontend
+-- nodemon server for backend
