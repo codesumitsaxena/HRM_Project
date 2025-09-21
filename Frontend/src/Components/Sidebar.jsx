@@ -9,6 +9,9 @@ import DepartmentTable from './HR/DepartmentTable'
 import LeaveRequest from './Employees/LeaveRequest'
 import AttendanceTable from './Employees/AttendanceEmployee'
 import HRLeaveDashboard from './HR/HRDashboard'
+import HRleaveRequest from './HR/HRLeaveRequest'
+import EmployeeDashboard from './Employees/EmployeeDashboard';
+import EmployeeProfile from './Employees/EnployeeProfile';
 const Dashboard = () => {
   return (
     <div>
@@ -200,7 +203,7 @@ const Sidebar = () => {
         hasSubmenu: true,
         submenu: [
           { id: 'daily-attendance', title: 'Daily Attendance', path: '/attendance/daily', component: 'DailyAttendance' },
-          { id: 'leave-requests', title: 'Leave Requests', path: '/attendance/leave-requests', component: 'LeaveRequest' }
+          { id: 'hr-leave-requests', title: 'Leave Requests', path: '/hr-leave-requests', component: 'HRleaveRequest' }
         ]
       }
     ],
@@ -235,18 +238,18 @@ const Sidebar = () => {
     ],
     employee: [
       {
-        id: 'dashboard',
+        id: 'employee-dashboard',
         title: 'My Dashboard',
         icon: Home,
         path: '/employee-dashboard',
         component: 'EmployeeDashboard'
       },
       {
-        id: 'profile',
+        id: 'employee-profile',
         title: 'My Profile',
         icon: Users,
-        path: '/profile',
-        component: 'MyProfile'
+        path: '/employee-profile',
+        component: 'EmployeeProfile'
       },
       {
         id: 'attendance',
@@ -323,6 +326,20 @@ const Sidebar = () => {
     if(activeMenu === 'HRdashboard'){
       return <HRLeaveDashboard/>
     }
+
+    if(activeMenu === 'hr-leave-requests'){
+      return <HRleaveRequest/>
+    }
+    if(activeMenu === 'employee-dashboard'){
+      return <EmployeeDashboard/>
+    }
+    if(activeMenu === 'employee-profile'){
+      return <EmployeeProfile/>
+    }
+
+
+    
+
     
 
     

@@ -5,6 +5,8 @@ import {
   Calendar, User, IdCard, Briefcase, MapPin,
   DollarSign, Building2, Image
 } from 'lucide-react';
+import EmployeeViewModal from '../Employees/EmployeeViewModal'
+import EmployeeAddEditModal from '../Employees/EmployeeAddEditModal'
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 
@@ -48,20 +50,6 @@ const EmployeeTable = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(8);
 
-  const [formData, setFormData] = useState({
-    Employee_Id: '',
-    First_Name: '',
-    Last_Name: '',
-    Email: '',
-    Phone: '',
-    Address: '',
-    Join_Date: '',
-    Designation: '',
-    Basic_Salary: '',
-    Department_Id: '',
-    Image_Path: ''
-  });
-
   const exportToExcel = () => {
     const worksheet = XLSX.utils.json_to_sheet(employees);
     const workbook = XLSX.utils.book_new();
@@ -94,31 +82,13 @@ const EmployeeTable = () => {
     'Project Manager'
   ];
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
   const openAddModal = () => {
     setEditingEmployee(null);
-    setFormData({
-      Employee_Id: '',
-      First_Name: '',
-      Last_Name: '',
-      Email: '',
-      Phone: '',
-      Address: '',
-      Join_Date: '',
-      Designation: '',
-      Basic_Salary: '',
-      Department_Id: '',
-      Image_Path: ''
-    });
     setShowModal(true);
   };
 
   const openEditModal = (emp) => {
     setEditingEmployee(emp);
-    setFormData({ ...emp });
     setShowModal(true);
   };
 
@@ -127,85 +97,94 @@ const EmployeeTable = () => {
     setShowViewModal(true);
   };
 
-  const handleSave = async () => {
+  // FIXED: Updated handleSave function with proper data formatting and error handling
+  const handleSave = async (formData) => {
     setSaving(true);
     try {
-      // Format data properly
-      const formattedData = {
-        ...formData,
-        Join_Date: formData.Join_Date
-          ? new Date(formData.Join_Date).toISOString().split("T")[0]
-          : null,
-        Department_Id: formData.Department_Id ? parseInt(formData.Department_Id) : null,
-        Basic_Salary: formData.Basic_Salary ? parseFloat(formData.Basic_Salary) : null
-      };
+        console.log("Received form data:", formData);
+        
+        // Format data properly for the API
+        const formattedData = {
+            ...formData,
+            // Format dates properly
+            Join_Date: formData.Join_Date
+                ? new Date(formData.Join_Date).toISOString().split("T")[0]
+                : null,
+            Date_Of_Birth: formData.Date_Of_Birth
+                ? new Date(formData.Date_Of_Birth).toISOString().split("T")[0]
+                : null,
+            Resigned_Date: formData.Resigned_Date
+                ? new Date(formData.Resigned_Date).toISOString().split("T")[0]
+                : null,
+            // Convert numbers properly
+            Department_Id: formData.Department_Id ? parseInt(formData.Department_Id) : null,
+            Basic_Salary: formData.Basic_Salary ? parseFloat(formData.Basic_Salary) : null,
+            Work_Experience: formData.Work_Experience ? parseFloat(formData.Work_Experience) : 0.0
+        };
 
-      // FIXED: Added validation for Department_Id
-      if (!formattedData.Department_Id) {
-        alert("Please select a department");
-        setSaving(false);
-        return;
-      }
+        console.log("Sending formatted data:", formattedData);
 
-      console.log("Sending data:", formattedData);
-      console.log("Department_Id value:", formattedData.Department_Id, typeof formattedData.Department_Id);
-  
-      const token = localStorage.getItem("token");
-  
-      if (editingEmployee) {
-        const response = await fetch(
-          `http://localhost:3000/employees/${editingEmployee.Employee_Id}`,
-          {
-            method: "PUT",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify(formattedData),
-          }
-        );
-  
-        if (response.ok) {
-          alert("Employee updated successfully!");
-          await fetchEmployees();
-          setShowModal(false);
+        const token = localStorage.getItem("token");
+
+        if (editingEmployee) {
+            // Update existing employee
+            const response = await fetch(
+                `http://localhost:3000/employees/${editingEmployee.Employee_Id}`,
+                {
+                    method: "PUT",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`,
+                    },
+                    body: JSON.stringify(formattedData),
+                }
+            );
+
+            if (response.ok) {
+                alert("Employee updated successfully!");
+                await fetchEmployees(); // Refresh the employee list
+                setShowModal(false);
+            } else {
+                const errorData = await response.json();
+                console.error("Update error:", errorData);
+                alert(`Failed to update employee: ${errorData.error || errorData.message || "Unknown error"}`);
+            }
         } else {
-          const errorData = await response.json();
-          alert(`Failed to update employee: ${errorData.error || "Unknown error"}`);
+            // Add new employee
+            const response = await fetch("http://localhost:3000/employees", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify(formattedData),
+            });
+
+            if (response.ok) {
+                alert("Employee added successfully!");
+                await fetchEmployees(); // Refresh the employee list
+                setShowModal(false);
+            } else {
+                const errorData = await response.json();
+                console.error("Add error:", errorData);
+                alert(`Failed to add employee: ${errorData.error || errorData.message || "Unknown error"}`);
+            }
         }
-      } else {
-        const response = await fetch("http://localhost:3000/employees", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(formattedData),
-        });
-  
-        if (response.ok) {
-          alert("Employee added successfully!");
-          await fetchEmployees();
-          setShowModal(false);
-        } else {
-          const errorData = await response.json();
-          alert(`Failed to add employee: ${errorData.error || "Unknown error"}`);
-        }
-      }
     } catch (error) {
-      console.error("Error saving employee:", error);
-      alert("Error saving employee. Please try again.");
+        console.error("Error saving employee:", error);
+        alert("Error saving employee. Please try again.");
     } finally {
-      setSaving(false);
+        setSaving(false);
     }
   };
+
   const handleDelete = async (employeeId) => {
     if (!window.confirm('Are you sure you want to delete this employee?')) {
       return;
     }
   
     try {
-      const token = localStorage.getItem("token"); // Get token from storage
+      const token = localStorage.getItem("token");
   
       if (!token) {
         alert("You are not logged in.");
@@ -216,7 +195,7 @@ const EmployeeTable = () => {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}` // <-- send token here
+          "Authorization": `Bearer ${token}`
         }
       });
   
@@ -644,589 +623,23 @@ const EmployeeTable = () => {
         </div>
       )}
 
-      {/* Add/Edit Modal */}
-      {showModal && (
-        <div 
-          className="modal show d-block" 
-          style={{ 
-            backgroundColor: 'rgba(0,0,0,0.8)',
-            zIndex: 1050
-          }}
-        >
-          <div className="modal-dialog modal-lg modal-dialog-centered">
-            <div 
-              className="modal-content"
-              style={{
-                background: "#ffffff",
-                border: "2px solid #3fe2cd",
-                borderRadius: "12px",
-                boxShadow: "0 15px 35px rgba(0,0,0,0.3)"
-              }}
-            >
-              <div 
-                className="modal-header"
-                style={{
-                  background: "linear-gradient(135deg, #3fe2cd, #2c5f5d)",
-                  color: "white",
-                  borderRadius: "10px 10px 0 0",
-                  borderBottom: "none"
-                }}
-              >
-                <h5 className="modal-title fw-bold">
-                  {editingEmployee ? 'Edit Employee' : 'Add New Employee'}
-                </h5>
-                <button 
-                  className="btn-close btn-close-white" 
-                  onClick={() => setShowModal(false)}
-                  disabled={saving}
-                ></button>
-              </div>
-              <div className="modal-body p-4" style={{ background: "#ffffff" }}>
-                <div className="row">
-                  <div className="col-md-6">
-                    <div className="mb-3">
-                      <label className="form-label fw-bold" style={{ color: "#2c5f5d" }}>
-                        <IdCard size={16} className="me-1" />
-                        Employee ID *
-                      </label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        name="Employee_Id"
-                        value={formData.Employee_Id}
-                        onChange={handleChange}
-                        placeholder="Enter Employee ID"
-                        required
-                        disabled={saving}
-                        style={{
-                          border: "2px solid #e9ecef",
-                          borderRadius: "8px",
-                          padding: "10px 12px"
-                        }}
-                      />
-                    </div>
-                  </div>
-                  <div className="col-md-6">
-                    <div className="mb-3">
-                      <label className="form-label fw-bold" style={{ color: "#2c5f5d" }}>
-                        <User size={16} className="me-1" />
-                        First Name *
-                      </label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        name="First_Name"
-                        value={formData.First_Name}
-                        onChange={handleChange}
-                        placeholder="Enter First Name"
-                        required
-                        disabled={saving}
-                        style={{
-                          border: "2px solid #e9ecef",
-                          borderRadius: "8px",
-                          padding: "10px 12px"
-                        }}
-                      />
-                    </div>
-                  </div>
-                </div>
-                <div className="row">
-                  <div className="col-md-6">
-                    <div className="mb-3">
-                      <label className="form-label fw-bold" style={{ color: "#2c5f5d" }}>
-                        <User size={16} className="me-1" />
-                        Last Name *
-                      </label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        name="Last_Name"
-                        value={formData.Last_Name}
-                        onChange={handleChange}
-                        placeholder="Enter Last Name"
-                        required
-                        disabled={saving}
-                        style={{
-                          border: "2px solid #e9ecef",
-                          borderRadius: "8px",
-                          padding: "10px 12px"
-                        }}
-                      />
-                    </div>
-                  </div>
-                  <div className="col-md-6">
-                    <div className="mb-3">
-                      <label className="form-label fw-bold" style={{ color: "#2c5f5d" }}>
-                        <Mail size={16} className="me-1" />
-                        Email Address *
-                      </label>
-                      <input
-                        type="email"
-                        className="form-control"
-                        name="Email"
-                        value={formData.Email}
-                        onChange={handleChange}
-                        placeholder="Enter Email Address"
-                        required
-                        disabled={saving}
-                        style={{
-                          border: "2px solid #e9ecef",
-                          borderRadius: "8px",
-                          padding: "10px 12px"
-                        }}
-                      />
-                    </div>
-                  </div>
-                </div>
-                <div className="row">
-                  <div className="col-md-6">
-                    <div className="mb-3">
-                      <label className="form-label fw-bold" style={{ color: "#2c5f5d" }}>
-                        <Phone size={16} className="me-1" />
-                        Phone Number *
-                      </label>
-                      <input
-                        type="tel"
-                        className="form-control"
-                        name="Phone"
-                        value={formData.Phone}
-                        onChange={handleChange}
-                        placeholder="Enter Phone Number"
-                        required
-                        disabled={saving}
-                        style={{
-                          border: "2px solid #e9ecef",
-                          borderRadius: "8px",
-                          padding: "10px 12px"
-                        }}
-                      />
-                    </div>
-                  </div>
-                  <div className="col-md-6">
-                    <div className="mb-3">
-                      <label className="form-label fw-bold" style={{ color: "#2c5f5d" }}>
-                        <MapPin size={16} className="me-1" />
-                        Address
-                      </label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        name="Address"
-                        value={formData.Address}
-                        onChange={handleChange}
-                        placeholder="Enter Address"
-                        disabled={saving}
-                        style={{
-                          border: "2px solid #e9ecef",
-                          borderRadius: "8px",
-                          padding: "10px 12px"
-                        }}
-                      />
-                    </div>
-                  </div>
-                </div>
-                <div className="row">
-                  <div className="col-md-6">
-                    <div className="mb-3">
-                      <label className="form-label fw-bold" style={{ color: "#2c5f5d" }}>
-                        <Calendar size={16} className="me-1" />
-                        Join Date *
-                      </label>
-                      <input
-                        type="date"
-                        className="form-control"
-                        name="Join_Date"
-                        value={formData.Join_Date}
-                        onChange={handleChange}
-                        required
-                        disabled={saving}
-                        style={{
-                          border: "2px solid #e9ecef",
-                          borderRadius: "8px",
-                          padding: "10px 12px"
-                        }}
-                      />
-                    </div>
-                  </div>
-                  <div className="col-md-6">
-                    <div className="mb-3">
-                      <label className="form-label fw-bold" style={{ color: "#2c5f5d" }}>
-                        <Briefcase size={16} className="me-1" />
-                        Designation *
-                      </label>
-                      <select
-                        className="form-select"
-                        name="Designation"
-                        value={formData.Designation}
-                        onChange={handleChange}
-                        required
-                        disabled={saving}
-                        style={{
-                          border: "2px solid #e9ecef",
-                          borderRadius: "8px",
-                          padding: "10px 12px"
-                        }}
-                      >
-                        <option value="">Select Designation</option>
-                        {designations.map(designation => (
-                          <option key={designation} value={designation}>{designation}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                </div>
-                <div className="row">
-                  <div className="col-md-6">
-                    <div className="mb-3">
-                      <label className="form-label fw-bold" style={{ color: "#2c5f5d" }}>
-                        <DollarSign size={16} className="me-1" />
-                        Basic Salary
-                      </label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        name="Basic_Salary"
-                        value={formData.Basic_Salary}
-                        onChange={handleChange}
-                        placeholder="Enter Basic Salary"
-                        disabled={saving}
-                        style={{
-                          border: "2px solid #e9ecef",
-                          borderRadius: "8px",
-                          padding: "10px 12px"
-                        }}
-                      />
-                    </div>
-                  </div>
-                  <div className="col-md-6">
-                    <div className="mb-3">
-                      <label className="form-label fw-bold" style={{ color: "#2c5f5d" }}>
-                        <Building2 size={16} className="me-1" />
-                        Department *
-                      </label>
-                      <select
-                        className="form-select"
-                        name="Department_Id"
-                        value={formData.Department_Id}
-                        onChange={handleChange}
-                        required
-                        disabled={saving}
-                        style={{
-                          border: "2px solid #e9ecef",
-                          borderRadius: "8px",
-                          padding: "10px 12px"
-                        }}
-                      >
-                        <option value="">Select Department</option>
-                        {departments.map(dept => (
-                          <option key={dept.id} value={dept.id}>{dept.name}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                </div>
-                <div className="row">
-                  <div className="col-md-12">
-                    <div className="mb-3">
-                      <label className="form-label fw-bold" style={{ color: "#2c5f5d" }}>
-                        <Image size={16} className="me-1" />
-                        Image Path
-                      </label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        name="Image_Path"
-                        value={formData.Image_Path}
-                        onChange={handleChange}
-                        placeholder="Enter Image URL or Path"
-                        disabled={saving}
-                        style={{
-                          border: "2px solid #e9ecef",
-                          borderRadius: "8px",
-                          padding: "10px 12px"
-                        }}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div 
-                className="modal-footer" 
-                style={{ 
-                  background: "#f8f9fa",
-                  borderTop: "1px solid #dee2e6",
-                  borderRadius: "0 0 10px 10px"
-                }}
-              >
-                <button 
-                  className="btn btn-secondary"
-                  onClick={() => setShowModal(false)}
-                  disabled={saving}
-                  style={{
-                    background: "#6c757d",
-                    border: "none",
-                    borderRadius: "8px",
-                    padding: "10px 20px"
-                  }}
-                >
-                  Cancel
-                </button>
-                <button 
-                  className="btn ms-2"
-                  onClick={handleSave}
-                  disabled={saving}
-                  style={{
-                    background: "linear-gradient(45deg, #3fe2cd, #2c5f5d)",
-                    color: "white",
-                    border: "none",
-                    borderRadius: "8px",
-                    padding: "10px 20px"
-                  }}
-                >
-                  {saving ? 'Saving...' : (editingEmployee ? 'Update Employee' : 'Save Employee')}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* View Modal */}
-      {showViewModal && viewingEmployee && (
-        <div 
-          className="modal show d-block" 
-          style={{ 
-            backgroundColor: 'rgba(0,0,0,0.8)',
-            zIndex: 1050
-          }}
-        >
-          <div className="modal-dialog modal-lg modal-dialog-centered">
-            <div 
-              className="modal-content"
-              style={{
-                background: "#ffffff",
-                border: "2px solid #3fe2cd",
-                borderRadius: "12px",
-                boxShadow: "0 15px 35px rgba(0,0,0,0.3)"
-              }}
-            >
-              <div 
-                className="modal-header"
-                style={{
-                  background: "linear-gradient(135deg, #17a2b8, #20c997)",
-                  color: "white",
-                  borderRadius: "10px 10px 0 0",
-                  borderBottom: "none"
-                }}
-              >
-                <h5 className="modal-title fw-bold">
-                  Employee Details
-                </h5>
-                <button 
-                  className="btn-close btn-close-white" 
-                  onClick={() => setShowViewModal(false)}
-                ></button>
-              </div>
-              <div className="modal-body p-4" style={{ background: "#ffffff" }}>
-                {viewingEmployee.Image_Path && (
-                  <div className="text-center mb-4">
-                    <img 
-                      src={viewingEmployee.Image_Path} 
-                      alt="Employee" 
-                      className="rounded-circle"
-                      style={{
-                        width: "100px",
-                        height: "100px",
-                        objectFit: "cover",
-                        border: "3px solid #3fe2cd"
-                      }}
-                      onError={(e) => {
-                        e.target.style.display = 'none';
-                      }}
-                    />
-                  </div>
-                )}
-                <div className="row">
-                  <div className="col-md-6">
-                    <div className="mb-3">
-                      <label className="form-label fw-bold" style={{ color: "#2c5f5d" }}>
-                        <IdCard size={16} className="me-1" />
-                        Employee ID
-                      </label>
-                      <p className="mb-0 p-2" style={{ 
-                        color: "#5a6c6b", 
-                        background: "#f8f9fa",
-                        borderRadius: "6px",
-                        border: "1px solid #e9ecef"
-                      }}>
-                        {viewingEmployee.Employee_Id || 'N/A'}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="col-md-6">
-                    <div className="mb-3">
-                      <label className="form-label fw-bold" style={{ color: "#2c5f5d" }}>
-                        <User size={16} className="me-1" />
-                        Full Name
-                      </label>
-                      <p className="mb-0 p-2" style={{ 
-                        color: "#5a6c6b", 
-                        background: "#f8f9fa",
-                        borderRadius: "6px",
-                        border: "1px solid #e9ecef"
-                      }}>
-                        {viewingEmployee.First_Name} {viewingEmployee.Last_Name}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-                <div className="row">
-                  <div className="col-md-6">
-                    <div className="mb-3">
-                      <label className="form-label fw-bold" style={{ color: "#2c5f5d" }}>
-                        <Mail size={16} className="me-1" />
-                        Email
-                      </label>
-                      <p className="mb-0 p-2" style={{ 
-                        color: "#5a6c6b", 
-                        background: "#f8f9fa",
-                        borderRadius: "6px",
-                        border: "1px solid #e9ecef"
-                      }}>
-                        {viewingEmployee.Email || 'N/A'}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="col-md-6">
-                    <div className="mb-3">
-                      <label className="form-label fw-bold" style={{ color: "#2c5f5d" }}>
-                        <Phone size={16} className="me-1" />
-                        Phone
-                      </label>
-                      <p className="mb-0 p-2" style={{ 
-                        color: "#5a6c6b", 
-                        background: "#f8f9fa",
-                        borderRadius: "6px",
-                        border: "1px solid #e9ecef"
-                      }}>
-                        {viewingEmployee.Phone || 'N/A'}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-                <div className="row">
-                  <div className="col-md-6">
-                    <div className="mb-3">
-                      <label className="form-label fw-bold" style={{ color: "#2c5f5d" }}>
-                        <MapPin size={16} className="me-1" />
-                        Address
-                      </label>
-                      <p className="mb-0 p-2" style={{ 
-                        color: "#5a6c6b", 
-                        background: "#f8f9fa",
-                        borderRadius: "6px",
-                        border: "1px solid #e9ecef"
-                      }}>
-                        {viewingEmployee.Address || 'N/A'}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="col-md-6">
-                    <div className="mb-3">
-                      <label className="form-label fw-bold" style={{ color: "#2c5f5d" }}>
-                        <Calendar size={16} className="me-1" />
-                        Join Date
-                      </label>
-                      <p className="mb-0 p-2" style={{ 
-                        color: "#5a6c6b", 
-                        background: "#f8f9fa",
-                        borderRadius: "6px",
-                        border: "1px solid #e9ecef"
-                      }}>
-                        {viewingEmployee.Join_Date ? new Date(viewingEmployee.Join_Date).toLocaleDateString() : 'N/A'}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-                <div className="row">
-                  <div className="col-md-6">
-                    <div className="mb-3">
-                      <label className="form-label fw-bold" style={{ color: "#2c5f5d" }}>
-                        <Briefcase size={16} className="me-1" />
-                        Designation
-                      </label>
-                      <p className="mb-0 p-2" style={{ 
-                        color: "#5a6c6b", 
-                        background: "#f8f9fa",
-                        borderRadius: "6px",
-                        border: "1px solid #e9ecef"
-                      }}>
-                        {viewingEmployee.Designation || 'N/A'}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="col-md-6">
-                    <div className="mb-3">
-                      <label className="form-label fw-bold" style={{ color: "#2c5f5d" }}>
-                        <Building2 size={16} className="me-1" />
-                        Department
-                      </label>
-                      <p className="mb-0 p-2" style={{ 
-                        color: "#5a6c6b", 
-                        background: "#f8f9fa",
-                        borderRadius: "6px",
-                        border: "1px solid #e9ecef"
-                      }}>
-                        {getDepartmentName(viewingEmployee.Department_Id)}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-                <div className="row">
-                  <div className="col-md-6">
-                    <div className="mb-3">
-                      <label className="form-label fw-bold" style={{ color: "#2c5f5d" }}>
-                        <DollarSign size={16} className="me-1" />
-                        Basic Salary
-                      </label>
-                      <p className="mb-0 p-2" style={{ 
-                        color: "#5a6c6b", 
-                        background: "#f8f9fa",
-                        borderRadius: "6px",
-                        border: "1px solid #e9ecef"
-                      }}>
-                        {viewingEmployee.Basic_Salary ? `₹${parseInt(viewingEmployee.Basic_Salary).toLocaleString()}` : 'N/A'}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div 
-                className="modal-footer" 
-                style={{ 
-                  background: "#f8f9fa",
-                  borderTop: "1px solid #dee2e6",
-                  borderRadius: "0 0 10px 10px"
-                }}
-              >
-                <button 
-                  className="btn"
-                  onClick={() => setShowViewModal(false)}
-                  style={{
-                    background: "linear-gradient(45deg, #17a2b8, #20c997)",
-                    color: "white",
-                    border: "none",
-                    borderRadius: "8px",
-                    padding: "10px 20px"
-                  }}
-                >
-                  Close
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Modals */}
+      <EmployeeAddEditModal
+        showModal={showModal}
+        setShowModal={setShowModal}
+        editingEmployee={editingEmployee}
+        departments={departments}
+        designations={designations}
+        onSave={handleSave}
+        saving={saving}
+      />
+   
+      <EmployeeViewModal
+        showViewModal={showViewModal}
+        setShowViewModal={setShowViewModal}
+        viewingEmployee={viewingEmployee}
+        getDepartmentName={getDepartmentName}
+      />
     </div>
   );
 };

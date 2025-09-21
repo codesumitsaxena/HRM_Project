@@ -15,6 +15,10 @@ import "@fontsource/inter/600.css"; // Inter SemiBold
 import "@fontsource/inter/700.css"; // Inter Bold
 import AttendanceTable from './Components/Employees/AttendanceEmployee'
 import HRLeaveDashboard from './Components/HR/HRDashboard'
+import  HRleaveRequest from './Components/HR/HRLeaveRequest'
+import EmployeeProfile from "./Components/Employees/EnployeeProfile";
+import EmployeeDashboard from "./Components/Employees/EmployeeDashboard";
+
 
 
 function App() {
@@ -66,12 +70,36 @@ function App() {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/employee-dashboard"
+        element={
+          <ProtectedRoute>
+            <EmployeeDashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/employee-profile"
+        element={
+          <ProtectedRoute>
+            <EmployeeProfile />
+          </ProtectedRoute>
+        }
+      />
 
       <Route
         path="/Department"
         element={
           <ProtectedRoute>
             <Department />
+          </ProtectedRoute>
+        }
+      />
+        <Route
+        path="/hr-leave-requests"
+        element={
+          <ProtectedRoute>
+            <HRleaveRequest />
           </ProtectedRoute>
         }
       />
