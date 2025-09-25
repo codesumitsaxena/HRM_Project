@@ -5,10 +5,11 @@ const jwt = require('jsonwebtoken');
 const db = require('../config/db');
 require('dotenv').config();
 
-// Signup (Employee only)
+// Signup (Employee default)
 router.post('/signup', async (req, res) => {
   const { Full_Name, Email, Password } = req.body;
-  if (!Full_Name || !Email || !Password) return res.status(400).json({ msg: 'All fields required' });
+  if (!Full_Name || !Email || !Password)
+    return res.status(400).json({ msg: 'All fields required' });
 
   const hashedPassword = await bcrypt.hash(Password, 10);
   const Role = 'employee'; // default role
@@ -16,7 +17,7 @@ router.post('/signup', async (req, res) => {
   db.query(
     'INSERT INTO users (Full_Name, Email, Password, Role) VALUES (?, ?, ?, ?)',
     [Full_Name, Email, hashedPassword, Role],
-    (err, result) => {
+    (err) => {
       if (err) {
         if (err.code === 'ER_DUP_ENTRY') return res.status(400).json({ msg: 'Email already exists' });
         return res.status(500).json({ msg: err.message });

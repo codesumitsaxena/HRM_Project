@@ -1,7 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Form, Button, Alert, InputGroup } from "react-bootstrap";
 import { Link, useNavigate } from "react-router-dom";
-import axios from "axios";
+import { useAuth } from "../Components/AuthContext";
 import LoginFormImg from "../assets/LoginPageImg.jpg";
 import { IoIosEye, IoIosEyeOff } from "react-icons/io";
 
@@ -16,7 +16,17 @@ function Login() {
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  
   const navigate = useNavigate();
+  const { login, signup, isAuthenticated, getDashboardRoute } = useAuth();
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate(getDashboardRoute());
+    }
+  }, [isAuthenticated, navigate, getDashboardRoute]);
 
   const toggleForm = (e) => {
     e.preventDefault();
@@ -34,6 +44,7 @@ function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    setIsLoading(true);
 
     try {
       if (isSignup) {
@@ -42,29 +53,30 @@ function Login() {
           return;
         }
 
-        // Fixed backend route for signup
-        await axios.post("http://localhost:3000/api/auth/signup", {
-          Full_Name: formData.name,
-          Email: formData.email,
-          Password: formData.password,
-        });
-
-        alert("Registration successful! Please log in.");
-        setIsSignup(false);
+        const result = await signup(formData.name, formData.email, formData.password);
+        
+        if (result.success) {
+          alert("Registration successful! Please log in.");
+          setIsSignup(false);
+          setFormData({ name: "", email: "", password: "", confirmPassword: "" });
+        } else {
+          setError(result.error);
+        }
       } else {
-        const res = await axios.post("http://localhost:3000/api/auth/login", {
-          Email: formData.email,
-          Password: formData.password,
-        });
-
-        // Save token and user info
-        localStorage.setItem("token", res.data.token);
-        localStorage.setItem("user", JSON.stringify({ role: res.data.role, name: res.data.name }));
-        navigate("/dashboard");
+        const result = await login(formData.email, formData.password);
+        
+        if (result.success) {
+          // Navigation will be handled by useEffect above
+          console.log("Login successful");
+        } else {
+          setError(result.error);
+        }
       }
     } catch (err) {
       console.error(err);
-      setError(err.response?.data?.msg || "Something went wrong.");
+      setError("Something went wrong. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -94,6 +106,7 @@ function Login() {
             <Button
               variant="light"
               className="border w-100 mb-3 d-flex align-items-center justify-content-center"
+              disabled={isLoading}
             >
               <img
                 src="https://www.svgrepo.com/show/475656/google-color.svg"
@@ -122,6 +135,7 @@ function Login() {
                     onChange={handleChange}
                     placeholder="Enter your name"
                     required
+                    disabled={isLoading}
                   />
                 </Form.Group>
               )}
@@ -135,6 +149,7 @@ function Login() {
                   onChange={handleChange}
                   placeholder="Enter email"
                   required
+                  disabled={isLoading}
                 />
               </Form.Group>
 
@@ -148,10 +163,15 @@ function Login() {
                     onChange={handleChange}
                     placeholder="Password"
                     required
+                    disabled={isLoading}
                   />
                   <InputGroup.Text
                     onClick={() => setShowPassword(!showPassword)}
-                    style={{ cursor: "pointer", background: "transparent", borderLeft: "none" }}
+                    style={{ 
+                      cursor: "pointer", 
+                      background: "transparent", 
+                      borderLeft: "none" 
+                    }}
                   >
                     {showPassword ? <IoIosEyeOff /> : <IoIosEye />}
                   </InputGroup.Text>
@@ -169,10 +189,15 @@ function Login() {
                       onChange={handleChange}
                       placeholder="Confirm password"
                       required
+                      disabled={isLoading}
                     />
                     <InputGroup.Text
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      style={{ cursor: "pointer", background: "transparent", borderLeft: "none" }}
+                      style={{ 
+                        cursor: "pointer", 
+                        background: "transparent", 
+                        borderLeft: "none" 
+                      }}
                     >
                       {showConfirmPassword ? <IoIosEyeOff /> : <IoIosEye />}
                     </InputGroup.Text>
@@ -182,15 +207,31 @@ function Login() {
 
               {!isSignup && (
                 <div className="d-flex justify-content-between align-items-center mb-3">
-                  <Form.Check type="checkbox" label="Remember for 30 days" />
+                  <Form.Check 
+                    type="checkbox" 
+                    label="Remember for 30 days" 
+                    disabled={isLoading}
+                  />
                   <Link to="#" className="small text-muted" style={{ textDecoration: "none" }}>
                     Forgot password
                   </Link>
                 </div>
               )}
 
-              <Button variant="dark" type="submit" className="w-100">
-                {isSignup ? "Sign up" : "Sign in"}
+              <Button 
+                variant="dark" 
+                type="submit" 
+                className="w-100"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                    {isSignup ? "Creating account..." : "Signing in..."}
+                  </>
+                ) : (
+                  isSignup ? "Sign up" : "Sign in"
+                )}
               </Button>
             </Form>
 
@@ -202,17 +243,19 @@ function Login() {
                     className="btn btn-link text-success p-0"
                     onClick={toggleForm}
                     style={{ textDecoration: "none" }}
+                    disabled={isLoading}
                   >
                     Sign in
                   </button>
                 </>
               ) : (
                 <>
-                  Don’t have an account?{" "}
+                  Don't have an account?{" "}
                   <button
                     className="btn btn-link text-success p-0"
                     onClick={toggleForm}
                     style={{ textDecoration: "none" }}
+                    disabled={isLoading}
                   >
                     Sign up
                   </button>

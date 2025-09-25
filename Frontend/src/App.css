@@ -47,3 +47,7 @@ body {
 .loginContainer{
   background: linear-gradient(to bottom right, #3fe2cd47, #ffffff42);
 }
+
+#profile-dropdown{
+  z-index: 9999999 !important;
+}
