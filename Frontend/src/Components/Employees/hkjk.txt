@@ -1,0 +1,21 @@
+
+  // Rest of your JSX remains exactly the same...
+  return (
+    <div 
+      className="p-3 p-md-4"
+      style={{
+        background: "linear-gradient(135deg, #3fe2cd08, #ffffff95, #3fe2cd12)",
+        minHeight: "100vh"
+      }}
+    >
+      {/* Your existing JSX content */}
+      <div className="alert alert-info">
+        <strong>Debug:</strong> Employee ID: {getEmployeeId()} | User: {user?.name || 'Not found'}
+      </div>
+      
+      {/* Rest of your component JSX... */}
+    </div>
+  );
+};
+
+export default EmployeeProfile;

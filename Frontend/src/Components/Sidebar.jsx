@@ -294,6 +294,13 @@ const Dashboard = () => {
           { id: 'leave-request', title: 'Employee Leave Request View', path: '/attendance/leave-request', component: 'LeaveRequest' }
         ]
       },
+      {
+        id: 'employee-profile',
+        title: 'My Profile',
+        icon: UserCircle,
+        path: '/employee-profile',
+        component: 'EmployeeProfile'
+      },
       
       // Basic Reports
       {

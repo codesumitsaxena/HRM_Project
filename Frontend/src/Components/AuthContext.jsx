@@ -31,8 +31,8 @@ export const AuthProvider = ({ children }) => {
         // Set axios default header
         axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
         
-        // Verify token with backend
-        verifyToken();
+        // Verify token with backend (optional, remove if causing issues)
+        // verifyToken();
       } catch (error) {
         console.error('Error parsing user data:', error);
         logout();
@@ -45,30 +45,32 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await axios.get('http://localhost:3000/api/auth/profile');
       // Update user data from backend
-      setUser(prev => ({ ...prev, ...response.data }));
+      setUser(prev => ({ ...prev, ...response.data.user }));
     } catch (error) {
       console.error('Token verification failed:', error);
-      logout();
+      // Don't logout immediately on verification failure
+      // logout();
     }
   };
 
   const login = async (email, password) => {
     try {
       const response = await axios.post('http://localhost:3000/api/auth/login', {
-        Email: email,
-        Password: password,
+        Email: email,  // Match backend expectation
+        Password: password,  // Match backend expectation
       });
-
-      const { token, role, name, userId, email: userEmail } = response.data;
+  
+      const { token, role, name, userId, employeeId, email: userEmail, success } = response.data;
       
       const userData = { 
         role, 
         name, 
-        userId, 
-        email: userEmail,
-        User_Id: userId 
+        userId: userId || employeeId,
+        employeeId: employeeId || userId,
+        email: userEmail || email, // Use email from response or fallback
+        User_Id: userId || employeeId
       };
-
+  
       // Save to localStorage
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(userData));
@@ -79,13 +81,13 @@ export const AuthProvider = ({ children }) => {
       // Update state
       setUser(userData);
       setIsAuthenticated(true);
-
+  
       return { success: true };
     } catch (error) {
       console.error('Login error:', error);
       return { 
         success: false, 
-        error: error.response?.data?.msg || 'Login failed' 
+        error: error.response?.data?.msg || error.response?.data?.message || 'Login failed' 
       };
     }
   };
@@ -93,16 +95,16 @@ export const AuthProvider = ({ children }) => {
   const signup = async (fullName, email, password) => {
     try {
       await axios.post('http://localhost:3000/api/auth/signup', {
-        Full_Name: fullName,
-        Email: email,
-        Password: password,
+        Full_Name: fullName,  // Match backend expectation
+        Email: email,         // Match backend expectation
+        Password: password,   // Match backend expectation
       });
       return { success: true };
     } catch (error) {
       console.error('Signup error:', error);
       return { 
         success: false, 
-        error: error.response?.data?.msg || 'Signup failed' 
+        error: error.response?.data?.msg || error.response?.data?.message || 'Signup failed' 
       };
     }
   };

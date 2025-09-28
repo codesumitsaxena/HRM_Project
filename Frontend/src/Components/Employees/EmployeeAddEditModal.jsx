@@ -4,6 +4,7 @@ import {
   DollarSign, Building2, Image, CreditCard, FileText,
   Users, Clock, Award, Plus, X, Upload, Camera, Trash2, ChevronRight, ChevronLeft, Shield
 } from 'lucide-react';
+import { useAuth } from '../AuthContext'; // Add this import
 
 const EmployeeAddEditModal = ({ 
   showModal, 
@@ -15,6 +16,7 @@ const EmployeeAddEditModal = ({
   designations = [],
   currentUserRole = 'admin' // 'admin' or 'hr'
 }) => {
+  const { signup } = useAuth(); // Add useAuth hook
   const [currentStep, setCurrentStep] = useState(1);
   const [activeTab, setActiveTab] = useState('personal');
   const [educationQualifications, setEducationQualifications] = useState([]);
@@ -23,6 +25,7 @@ const EmployeeAddEditModal = ({
   const [govIdImagePreview, setGovIdImagePreview] = useState('');
   const [uploadingProfileImage, setUploadingProfileImage] = useState(false);
   const [uploadingGovIdImage, setUploadingGovIdImage] = useState(false);
+  const [savingStep1, setSavingStep1] = useState(false); // Add state for step 1 saving
 
   const profileImageInputRef = useRef(null);
   const govIdImageInputRef = useRef(null);
@@ -473,15 +476,41 @@ const EmployeeAddEditModal = ({
     return Object.keys(errors).length === 0;
   };
 
-  // Handle Next Step
-  const handleNextStep = () => {
+  // Modified Handle Next Step with Auth Integration
+  const handleNextStep = async () => {
     if (currentStep === 1 && validateStep1()) {
-      // Generate Employee ID for step 2
-      const employeeId = `EMP${Date.now()}`;
-      setStep1Data(prev => ({ ...prev, Employee_Id: employeeId }));
-      setStep2Data(prev => ({ ...prev, Employee_Id: employeeId }));
-      setCurrentStep(2);
-      setActiveTab('personal');
+      setSavingStep1(true);
+      
+      try {
+        // Create user account using Auth context
+        const signupResult = await signup(
+          step1Data.Full_Name,
+          step1Data.Email,
+          step1Data.Password
+        );
+
+        if (signupResult.success) {
+          // Generate Employee ID for step 2
+          const employeeId = `EMP${Date.now()}`;
+          setStep1Data(prev => ({ ...prev, Employee_Id: employeeId }));
+          setStep2Data(prev => ({ ...prev, Employee_Id: employeeId }));
+          
+          // Move to step 2
+          setCurrentStep(2);
+          setActiveTab('personal');
+          
+          // Show success message
+          alert('User account created successfully! Please fill in employee details.');
+        } else {
+          // Show error message
+          alert(`Failed to create user account: ${signupResult.error}`);
+        }
+      } catch (error) {
+        console.error('Error creating user account:', error);
+        alert('An error occurred while creating the user account. Please try again.');
+      } finally {
+        setSavingStep1(false);
+      }
     }
   };
 
@@ -492,7 +521,7 @@ const EmployeeAddEditModal = ({
     }
   };
 
-  // Handle Save
+  // Handle Save (for Step 2 - Employee Details)
   const handleSave = () => {
     if (currentStep === 2 && validateStep2()) {
       // Update step2Data with education qualifications
@@ -502,13 +531,14 @@ const EmployeeAddEditModal = ({
         updatedStep2Data[fieldName] = edu.rollNumber;
       });
 
-      // Combine both steps data for save
+      // For editing existing employee, just save employee data
+      // For new employee, the user account is already created in step 1
       const completeData = editingEmployee 
         ? updatedStep2Data 
         : {
-            // Step 1 data
+            // Step 1 data (user account already created)
             ...step1Data,
-            // Step 2 data
+            // Step 2 data (employee details)
             ...updatedStep2Data
           };
 
@@ -608,7 +638,7 @@ const EmployeeAddEditModal = ({
             <button 
               className="btn-close btn-close-white" 
               onClick={() => setShowModal(false)}
-              disabled={saving}
+              disabled={saving || savingStep1}
             ></button>
           </div>
 
@@ -636,7 +666,7 @@ const EmployeeAddEditModal = ({
                       value={step1Data.Full_Name}
                       onChange={handleStep1Change}
                       placeholder="Enter Full Name"
-                      disabled={saving}
+                      disabled={saving || savingStep1}
                     />
                     {step1Errors.Full_Name && (
                       <div className="invalid-feedback">{step1Errors.Full_Name}</div>
@@ -655,7 +685,7 @@ const EmployeeAddEditModal = ({
                       value={step1Data.Email}
                       onChange={handleStep1Change}
                       placeholder="Enter Email Address"
-                      disabled={saving}
+                      disabled={saving || savingStep1}
                     />
                     {step1Errors.Email && (
                       <div className="invalid-feedback">{step1Errors.Email}</div>
@@ -674,7 +704,7 @@ const EmployeeAddEditModal = ({
                       value={step1Data.Password}
                       onChange={handleStep1Change}
                       placeholder="Enter Password (min 6 characters)"
-                      disabled={saving}
+                      disabled={saving || savingStep1}
                     />
                     {step1Errors.Password && (
                       <div className="invalid-feedback">{step1Errors.Password}</div>
@@ -691,7 +721,7 @@ const EmployeeAddEditModal = ({
                       name="Role"
                       value={step1Data.Role}
                       onChange={handleStep1Change}
-                      disabled={saving}
+                      disabled={saving || savingStep1}
                     >
                       <option value="">Select Role</option>
                       {getRoleOptions().map(role => (
@@ -701,6 +731,16 @@ const EmployeeAddEditModal = ({
                     {step1Errors.Role && (
                       <div className="invalid-feedback">{step1Errors.Role}</div>
                     )}
+                  </div>
+                </div>
+
+                {/* Success message area for step 1 */}
+                <div className="mt-4">
+                  <div className="alert alert-info d-flex align-items-center" style={{ background: '#e8f4fd', border: '1px solid #3fe2cd', borderRadius: '8px' }}>
+                    <Shield size={16} className="me-2 text-primary" />
+                    <small className="text-primary mb-0">
+                      This will create a user account that the employee can use to login to the system. After creating the account, you'll be able to add detailed employee information.
+                    </small>
                   </div>
                 </div>
               </div>
@@ -1410,7 +1450,7 @@ const EmployeeAddEditModal = ({
               <button 
                 className="btn btn-secondary px-3 py-2 me-2"
                 onClick={() => setShowModal(false)}
-                disabled={saving}
+                disabled={saving || savingStep1}
                 style={{ borderRadius: '10px', fontSize: '0.9rem' }}
               >
                 Cancel
@@ -1420,7 +1460,7 @@ const EmployeeAddEditModal = ({
                 <button 
                   className="btn px-3 py-2"
                   onClick={handleNextStep}
-                  disabled={saving}
+                  disabled={saving || savingStep1}
                   style={{
                     background: "linear-gradient(45deg, #3fe2cd, #2c5f5d)",
                     color: "white",
@@ -1430,8 +1470,17 @@ const EmployeeAddEditModal = ({
                     fontSize: '0.9rem'
                   }}
                 >
-                  Next Step
-                  <ChevronRight size={16} className="ms-1" />
+                  {savingStep1 ? (
+                    <>
+                      <span className="spinner-border spinner-border-sm me-2" role="status"></span>
+                      Creating Account...
+                    </>
+                  ) : (
+                    <>
+                      Create Account & Next
+                      <ChevronRight size={16} className="ms-1" />
+                    </>
+                  )}
                 </button>
               ) : (
                 <button 

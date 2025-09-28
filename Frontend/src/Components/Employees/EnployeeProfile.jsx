@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useAuth } from '../AuthContext'; // Import the auth context
 import {
   User, Mail, Phone, MapPin, Calendar, Briefcase, Building2,
   Edit3, Camera, Save, X, Award, FileText, CreditCard,
@@ -8,6 +9,7 @@ import {
 } from 'lucide-react';
 
 const EmployeeProfile = () => {
+  const { user } = useAuth(); // Get user from auth context
   const [employeeData, setEmployeeData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [editMode, setEditMode] = useState(false);
@@ -15,6 +17,7 @@ const EmployeeProfile = () => {
   const [saving, setSaving] = useState(false);
   const [profileImagePreview, setProfileImagePreview] = useState('');
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [error, setError] = useState(null);
   
   const profileImageInputRef = useRef(null);
 
@@ -30,70 +33,158 @@ const EmployeeProfile = () => {
 
   const [formErrors, setFormErrors] = useState({});
 
+  // Enhanced function to get employee ID with better debugging
+  const getEmployeeId = () => {
+    console.log('=== Getting Employee ID ===');
+    
+    // Method 1: From auth context
+    if (user) {
+      console.log('User from context:', user);
+      if (user.userId) {
+        console.log('Found userId in context:', user.userId);
+        return user.userId;
+      }
+      if (user.employeeId) {
+        console.log('Found employeeId in context:', user.employeeId);
+        return user.employeeId;
+      }
+      if (user.User_Id) {
+        console.log('Found User_Id in context:', user.User_Id);
+        return user.User_Id;
+      }
+    }
+    
+    // Method 2: From localStorage user data
+    try {
+      const savedUser = localStorage.getItem('user');
+      if (savedUser) {
+        const parsedUser = JSON.parse(savedUser);
+        console.log('User from localStorage:', parsedUser);
+        
+        if (parsedUser.userId) {
+          console.log('Found userId in localStorage:', parsedUser.userId);
+          return parsedUser.userId;
+        }
+        if (parsedUser.employeeId) {
+          console.log('Found employeeId in localStorage:', parsedUser.employeeId);
+          return parsedUser.employeeId;
+        }
+        if (parsedUser.User_Id) {
+          console.log('Found User_Id in localStorage:', parsedUser.User_Id);
+          return parsedUser.User_Id;
+        }
+      }
+    } catch (error) {
+      console.error('Error parsing localStorage user:', error);
+    }
+    
+    // Method 3: From token payload
+    try {
+      const token = localStorage.getItem("token");
+      if (token) {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        console.log('Token payload:', payload);
+        
+        // Try different possible field names
+        const possibleIds = [
+          payload.employeeId,
+          payload.userId, 
+          payload.User_Id,
+          payload.id,
+          payload.Employee_Id
+        ];
+        
+        for (let id of possibleIds) {
+          if (id) {
+            console.log('Found ID in token:', id);
+            return id;
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error decoding token:', error);
+    }
+    
+    console.log('No employee ID found anywhere!');
+    return null;
+  };
+
+  // Debug useEffect
   useEffect(() => {
-    fetchEmployeeProfile();
-  }, []);
+    console.log('=== EMPLOYEE PROFILE DEBUG ===');
+    console.log('User from context:', user);
+    console.log('LocalStorage user:', localStorage.getItem('user'));
+    console.log('LocalStorage token exists:', !!localStorage.getItem('token'));
+    
+    const employeeId = getEmployeeId();
+    console.log('Resolved employee ID:', employeeId);
+    
+    if (employeeId) {
+      fetchEmployeeProfile();
+    } else {
+      setError('Unable to identify logged-in employee. Please login again.');
+      setLoading(false);
+    }
+  }, [user]);
 
   const fetchEmployeeProfile = async () => {
     try {
+      setLoading(true);
+      setError(null);
       const token = localStorage.getItem("token");
-      const response = await fetch("http://localhost:3000/employee/profile", {
+      const employeeId = getEmployeeId();
+      
+      console.log('Fetching profile for employee ID:', employeeId);
+      
+      if (!employeeId) {
+        throw new Error('Employee ID not found. Please login again.');
+      }
+      
+      const response = await fetch(`http://localhost:3000/employees/${employeeId}`, {
+        method: 'GET',
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        setEmployeeData(data);
-        setEditData({
-          First_Name: data.First_Name || '',
-          Last_Name: data.Last_Name || '',
-          Email: data.Email || '',
-          Phone: data.Phone || '',
-          Address: data.Address || '',
-          Emergency_Contact_Number: data.Emergency_Contact_Number || '',
-          Image_Path: data.Image_Path || ''
-        });
-        setProfileImagePreview(data.Image_Path || '');
+      console.log('API Response status:', response.status);
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          throw new Error('Employee profile not found. Please contact administrator.');
+        }
+        if (response.status === 403) {
+          throw new Error('Access denied. You can only view your own profile.');
+        }
+        throw new Error(`Failed to fetch employee data: ${response.status} ${response.statusText}`);
       }
+
+      const data = await response.json();
+      console.log('Employee data received:', data);
+      
+      setEmployeeData(data);
+      setEditData({
+        First_Name: data.First_Name || '',
+        Last_Name: data.Last_Name || '',
+        Email: data.Email || '',
+        Phone: data.Phone || '',
+        Address: data.Address || '',
+        Emergency_Contact_Number: data.Emergency_Contact_Number || '',
+        Image_Path: data.Image_Path || ''
+      });
+      setProfileImagePreview(data.Image_Path || '');
+      
     } catch (error) {
       console.error("Error fetching profile:", error);
+      setError(error.message);
     } finally {
       setLoading(false);
     }
   };
 
-  // Mock data for demonstration
-  const mockEmployee = {
-    Employee_Id: "EMP001",
-    First_Name: "John",
-    Last_Name: "Doe",
-    Email: "john.doe@company.com",
-    Phone: "9876543210",
-    Address: "123 Tech Street, Silicon Valley, CA 94105",
-    Date_Of_Birth: "1990-05-15",
-    Join_Date: "2022-01-15",
-    Designation: "Senior Software Engineer",
-    Department_Id: 1,
-    Department_Name: "IT",
-    Basic_Salary: 75000,
-    Work_Experience: 5.2,
-    Employee_Type: "Permanent",
-    Employee_Status: "Active",
-    Image_Path: "https://via.placeholder.com/200",
-    Emergency_Contact_Number: "9876543209",
-    Aadhaar_Number: "123456789012",
-    PAN_Number: "ABCDE1234F",
-    Tenth_Roll_Number: "1234567890",
-    Twelfth_Roll_Number: "0987654321",
-    UG_Roll_Number: "UG123456",
-    PG_Roll_Number: "PG789012",
-    Govt_Id_Proof_Path: "https://via.placeholder.com/300x200"
-  };
-
-  const employee = employeeData || mockEmployee;
+  // Rest of your component code remains the same...
+  // (I'll keep the rest of the functions unchanged for brevity)
 
   // Image upload function
   const uploadImage = async (file) => {
@@ -185,15 +276,15 @@ const EmployeeProfile = () => {
   const handleCancel = () => {
     setEditMode(false);
     setEditData({
-      First_Name: employee.First_Name || '',
-      Last_Name: employee.Last_Name || '',
-      Email: employee.Email || '',
-      Phone: employee.Phone || '',
-      Address: employee.Address || '',
-      Emergency_Contact_Number: employee.Emergency_Contact_Number || '',
-      Image_Path: employee.Image_Path || ''
+      First_Name: employeeData.First_Name || '',
+      Last_Name: employeeData.Last_Name || '',
+      Email: employeeData.Email || '',
+      Phone: employeeData.Phone || '',
+      Address: employeeData.Address || '',
+      Emergency_Contact_Number: employeeData.Emergency_Contact_Number || '',
+      Image_Path: employeeData.Image_Path || ''
     });
-    setProfileImagePreview(employee.Image_Path || '');
+    setProfileImagePreview(employeeData.Image_Path || '');
     setFormErrors({});
   };
 
@@ -220,7 +311,13 @@ const EmployeeProfile = () => {
     setSaving(true);
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch("http://localhost:3000/employee/profile", {
+      const employeeId = getEmployeeId();
+      
+      if (!employeeId) {
+        throw new Error('Employee ID not found. Please login again.');
+      }
+      
+      const response = await fetch(`http://localhost:3000/employees/${employeeId}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -292,6 +389,40 @@ const EmployeeProfile = () => {
     );
   }
 
+  if (error) {
+    return (
+      <div className="d-flex justify-content-center align-items-center" style={{ height: '100vh' }}>
+        <div className="alert alert-danger text-center">
+          <AlertCircle size={32} className="mb-2" />
+          <h4>Error Loading Profile</h4>
+          <p>{error}</p>
+          <div className="mt-3">
+            <button className="btn btn-primary me-2" onClick={fetchEmployeeProfile}>
+              Retry
+            </button>
+            <button className="btn btn-secondary" onClick={() => {
+              localStorage.clear();
+              window.location.reload();
+            }}>
+              Clear Data & Refresh
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!employeeData) {
+    return (
+      <div className="d-flex justify-content-center align-items-center" style={{ height: '100vh' }}>
+        <div className="alert alert-warning text-center">
+          <h4>No Employee Data Found</h4>
+          <p>Unable to load employee profile information.</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div 
       className="p-3 p-md-4"
@@ -317,7 +448,7 @@ const EmployeeProfile = () => {
                   <div className="d-flex align-items-center flex-column flex-md-row">
                     <div className="position-relative me-md-4 mb-3 mb-md-0">
                       <img
-                        src={editMode && profileImagePreview ? profileImagePreview : (employee.Image_Path || "https://via.placeholder.com/150")}
+                        src={editMode && profileImagePreview ? profileImagePreview : (employeeData.Image_Path || "https://via.placeholder.com/150")}
                         alt="Profile"
                         className="rounded-circle border border-3"
                         style={{ 
@@ -378,25 +509,25 @@ const EmployeeProfile = () => {
                     </div>
                     <div className="text-center text-md-start">
                       <h3 className="mb-2 fw-bold" style={{ color: "#2c5f5d" }}>
-                        {employee.First_Name} {employee.Last_Name}
+                        {employeeData.First_Name} {employeeData.Last_Name}
                       </h3>
                       <p className="mb-2 text-muted fs-5">
-                        {employee.Designation}
+                        {employeeData.Designation}
                       </p>
                       <div className="d-flex flex-wrap justify-content-center justify-content-md-start gap-3">
                         <div className="d-flex align-items-center">
                           <Building2 size={16} className="me-2 text-muted" />
-                          <span className="small text-muted">{employee.Department_Name}</span>
+                          <span className="small text-muted">{employeeData.Department_Name}</span>
                         </div>
                         <div className="d-flex align-items-center">
                           <Calendar size={16} className="me-2 text-muted" />
                           <span className="small text-muted">
-                            Joined {new Date(employee.Join_Date).toLocaleDateString()}
+                            Joined {new Date(employeeData.Join_Date).toLocaleDateString()}
                           </span>
                         </div>
                         <div className="d-flex align-items-center">
                           <Clock size={16} className="me-2 text-muted" />
-                          <span className="small text-muted">{employee.Work_Experience} years exp.</span>
+                          <span className="small text-muted">{employeeData.Work_Experience} years exp.</span>
                         </div>
                       </div>
                     </div>
@@ -468,7 +599,7 @@ const EmployeeProfile = () => {
             }}
           >
             <div className="card-body p-3">
-              <div className="text-primary fs-2 fw-bold">₹{parseInt(employee.Basic_Salary || 0).toLocaleString()}</div>
+              <div className="text-primary fs-2 fw-bold">₹{parseInt(employeeData.Basic_Salary || 0).toLocaleString()}</div>
               <div className="text-muted small">Monthly Salary</div>
             </div>
           </div>
@@ -591,7 +722,7 @@ const EmployeeProfile = () => {
                             )}
                           </div>
                         ) : (
-                          <div className="form-control-plaintext fw-semibold">{employee.First_Name}</div>
+                          <div className="form-control-plaintext fw-semibold">{employeeData.First_Name}</div>
                         )}
                       </div>
                       <div className="col-md-6">
@@ -614,7 +745,7 @@ const EmployeeProfile = () => {
                             )}
                           </div>
                         ) : (
-                          <div className="form-control-plaintext fw-semibold">{employee.Last_Name}</div>
+                          <div className="form-control-plaintext fw-semibold">{employeeData.Last_Name}</div>
                         )}
                       </div>
                       <div className="col-md-6">
@@ -637,7 +768,7 @@ const EmployeeProfile = () => {
                             )}
                           </div>
                         ) : (
-                          <div className="form-control-plaintext fw-semibold">{employee.Email}</div>
+                          <div className="form-control-plaintext fw-semibold">{employeeData.Email}</div>
                         )}
                       </div>
                       <div className="col-md-6">
@@ -661,7 +792,7 @@ const EmployeeProfile = () => {
                             )}
                           </div>
                         ) : (
-                          <div className="form-control-plaintext fw-semibold">{employee.Phone}</div>
+                          <div className="form-control-plaintext fw-semibold">{employeeData.Phone}</div>
                         )}
                       </div>
                       <div className="col-md-6">
@@ -670,7 +801,7 @@ const EmployeeProfile = () => {
                           Date of Birth
                         </label>
                         <div className="form-control-plaintext fw-semibold">
-                          {employee.Date_Of_Birth ? new Date(employee.Date_Of_Birth).toLocaleDateString() : 'Not provided'}
+                          {employeeData.Date_Of_Birth ? new Date(employeeData.Date_Of_Birth).toLocaleDateString() : 'Not provided'}
                         </div>
                       </div>
                       <div className="col-md-6">
@@ -695,7 +826,7 @@ const EmployeeProfile = () => {
                           </div>
                         ) : (
                           <div className="form-control-plaintext fw-semibold">
-                            {employee.Emergency_Contact_Number || 'Not provided'}
+                            {employeeData.Emergency_Contact_Number || 'Not provided'}
                           </div>
                         )}
                       </div>
@@ -715,7 +846,7 @@ const EmployeeProfile = () => {
                           />
                         ) : (
                           <div className="form-control-plaintext fw-semibold">
-                            {employee.Address || 'Not provided'}
+                            {employeeData.Address || 'Not provided'}
                           </div>
                         )}
                       </div>
@@ -733,41 +864,41 @@ const EmployeeProfile = () => {
                     <div className="row g-4">
                       <div className="col-md-6">
                         <label className="form-label fw-bold text-secondary small">Employee ID</label>
-                        <div className="form-control-plaintext fw-semibold">{employee.Employee_Id}</div>
+                        <div className="form-control-plaintext fw-semibold">{employeeData.Employee_Id}</div>
                       </div>
                       <div className="col-md-6">
                         <label className="form-label fw-bold text-secondary small">Designation</label>
-                        <div className="form-control-plaintext fw-semibold">{employee.Designation}</div>
+                        <div className="form-control-plaintext fw-semibold">{employeeData.Designation}</div>
                       </div>
                       <div className="col-md-6">
                         <label className="form-label fw-bold text-secondary small">Department</label>
-                        <div className="form-control-plaintext fw-semibold">{employee.Department_Name}</div>
+                        <div className="form-control-plaintext fw-semibold">{employeeData.Department_Name}</div>
                       </div>
                       <div className="col-md-6">
                         <label className="form-label fw-bold text-secondary small">Employee Type</label>
-                        <div className="form-control-plaintext fw-semibold">{employee.Employee_Type}</div>
+                        <div className="form-control-plaintext fw-semibold">{employeeData.Employee_Type}</div>
                       </div>
                       <div className="col-md-6">
                         <label className="form-label fw-bold text-secondary small">Join Date</label>
                         <div className="form-control-plaintext fw-semibold">
-                          {new Date(employee.Join_Date).toLocaleDateString()}
+                          {new Date(employeeData.Join_Date).toLocaleDateString()}
                         </div>
                       </div>
                       <div className="col-md-6">
                         <label className="form-label fw-bold text-secondary small">Work Experience</label>
-                        <div className="form-control-plaintext fw-semibold">{employee.Work_Experience} years</div>
+                        <div className="form-control-plaintext fw-semibold">{employeeData.Work_Experience} years</div>
                       </div>
                       <div className="col-md-6">
                         <label className="form-label fw-bold text-secondary small">Employment Status</label>
                         <div className="form-control-plaintext fw-semibold">
-                          <span className={`badge rounded-pill px-3 py-2 ${employee.Employee_Status === 'Active' ? 'bg-success' : 'bg-warning'}`}>
-                            {employee.Employee_Status}
+                          <span className={`badge rounded-pill px-3 py-2 ${employeeData.Employee_Status === 'Active' ? 'bg-success' : 'bg-warning'}`}>
+                            {employeeData.Employee_Status}
                           </span>
                         </div>
                       </div>
                       <div className="col-md-6">
                         <label className="form-label fw-bold text-secondary small">Basic Salary</label>
-                        <div className="form-control-plaintext fw-semibold">₹{parseInt(employee.Basic_Salary || 0).toLocaleString()}</div>
+                        <div className="form-control-plaintext fw-semibold">₹{parseInt(employeeData.Basic_Salary || 0).toLocaleString()}</div>
                       </div>
                     </div>
                   </div>
@@ -784,25 +915,25 @@ const EmployeeProfile = () => {
                       <div className="col-md-6">
                         <label className="form-label fw-bold text-secondary small">10th Roll Number</label>
                         <div className="form-control-plaintext fw-semibold">
-                          {employee.Tenth_Roll_Number || 'Not provided'}
+                          {employeeData.Tenth_Roll_Number || 'Not provided'}
                         </div>
                       </div>
                       <div className="col-md-6">
                         <label className="form-label fw-bold text-secondary small">12th Roll Number</label>
                         <div className="form-control-plaintext fw-semibold">
-                          {employee.Twelfth_Roll_Number || 'Not provided'}
+                          {employeeData.Twelfth_Roll_Number || 'Not provided'}
                         </div>
                       </div>
                       <div className="col-md-6">
                         <label className="form-label fw-bold text-secondary small">UG Roll Number</label>
                         <div className="form-control-plaintext fw-semibold">
-                          {employee.UG_Roll_Number || 'Not provided'}
+                          {employeeData.UG_Roll_Number || 'Not provided'}
                         </div>
                       </div>
                       <div className="col-md-6">
                         <label className="form-label fw-bold text-secondary small">PG Roll Number</label>
                         <div className="form-control-plaintext fw-semibold">
-                          {employee.PG_Roll_Number || 'Not provided'}
+                          {employeeData.PG_Roll_Number || 'Not provided'}
                         </div>
                       </div>
                     </div>
@@ -820,21 +951,21 @@ const EmployeeProfile = () => {
                       <div className="col-md-6">
                         <label className="form-label fw-bold text-secondary small">Aadhaar Number</label>
                         <div className="form-control-plaintext fw-semibold">
-                          {employee.Aadhaar_Number || 'Not provided'}
+                          {employeeData.Aadhaar_Number || 'Not provided'}
                         </div>
                       </div>
                       <div className="col-md-6">
                         <label className="form-label fw-bold text-secondary small">PAN Number</label>
                         <div className="form-control-plaintext fw-semibold">
-                          {employee.PAN_Number || 'Not provided'}
+                          {employeeData.PAN_Number || 'Not provided'}
                         </div>
                       </div>
                       <div className="col-12">
                         <label className="form-label fw-bold text-secondary small">Govt. ID Proof</label>
                         <div className="mt-2">
-                          {employee.Govt_Id_Proof_Path ? (
+                          {employeeData.Govt_Id_Proof_Path ? (
                             <a 
-                              href={employee.Govt_Id_Proof_Path} 
+                              href={employeeData.Govt_Id_Proof_Path} 
                               target="_blank" 
                               rel="noopener noreferrer"
                               className="btn btn-outline-primary"

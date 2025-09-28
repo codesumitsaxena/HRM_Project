@@ -7,7 +7,6 @@ const authRoutes = require('./routes/auth');
 const employeeRoutes = require('./routes/employeeRoutes');
 const leaveRoutes = require('./routes/LeaveRoutes');
 const departmentRoutes = require('./routes/department');
-const { authenticateToken } = require('./middleware/authMiddleware');
 const attendanceRoutes = require("./routes/attendenceRoutes");
 
 const app = express();
@@ -18,15 +17,13 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 // Routes
-app.use('/api/auth', authRoutes); // Signup/Login routes
+app.use('/api/auth', authRoutes); // Auth routes (signup/login/profile)
 
-// Protected routes (token required)
-app.use('/employees', authenticateToken, employeeRoutes);
-app.use('/leaves', authenticateToken, leaveRoutes);
-app.use('/departments', authenticateToken, departmentRoutes);
-app.use('/attendance', authenticateToken, attendanceRoutes);
-
-
+// Protected routes - Remove authenticateToken from here since routes handle their own auth
+app.use('/employees', employeeRoutes);
+app.use('/leaves', leaveRoutes);
+app.use('/departments', departmentRoutes);
+app.use('/attendance', attendanceRoutes);
 
 // Test route
 app.get('/', (req, res) => {

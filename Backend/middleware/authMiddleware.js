@@ -21,7 +21,7 @@ function authenticateToken(req, res, next) {
         message: 'Token verification failed' 
       });
     }
-    req.user = user; // { User_Id, Role }
+    req.user = user; // { User_Id, Role, userId, employeeId, etc. }
     next();
   });
 }
@@ -36,14 +36,43 @@ function authorize(allowedRoles) {
       });
     }
 
-    if (!allowedRoles.includes(req.user.Role)) {
+    const userRole = req.user.Role || req.user.role;
+    if (!allowedRoles.includes(userRole)) {
       return res.status(403).json({ 
         error: 'Access denied',
-        message: `Role '${req.user.Role}' is not authorized for this action` 
+        message: `Role '${userRole}' is not authorized for this action` 
       });
     }
     next();
   };
 }
 
-module.exports = { authenticateToken, authorize };
+// Check if employee can access specific employee data
+function checkEmployeeAccess(req, res, next) {
+  const requestedEmployeeId = req.params.id;
+  const userRole = req.user.Role || req.user.role;
+  const loggedInEmployeeId = req.user.employeeId || req.user.userId || req.user.User_Id;
+
+  console.log('Access Check:', {
+    requestedEmployeeId,
+    userRole,
+    loggedInEmployeeId
+  });
+
+  // Admin and HR can access any employee data
+  if (userRole === 'admin' || userRole === 'hr') {
+    return next();
+  }
+
+  // Employee can only access their own data
+  if (userRole === 'employee' && requestedEmployeeId == loggedInEmployeeId) {
+    return next();
+  }
+
+  return res.status(403).json({ 
+    error: 'Access denied',
+    message: 'You can only access your own profile data' 
+  });
+}
+
+module.exports = { authenticateToken, authorize, checkEmployeeAccess };
