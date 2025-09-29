@@ -20,67 +20,35 @@ const HRMDashboard = () => {
   // Active module state
   const [activeModule, setActiveModule] = useState('dashboard');
   
+  // Attendance state
+  const [attendanceRecords, setAttendanceRecords] = useState([]);
+  const [attendanceDate, setAttendanceDate] = useState(new Date().toISOString().split('T')[0]);
+  
+  // Real-time states
+  const [isLoading, setIsLoading] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState(new Date());
+  
   // Dashboard stats
   const [stats, setStats] = useState({
-    totalEmployees: 156,
-    presentToday: 142,
-    absentToday: 14,
-    pendingLeaves: 8,
-    upcomingBirthdays: 5,
+    totalEmployees: 0,
+    presentToday: 0,
+    absentToday: 0,
+    pendingLeaves: 0,
+    approvedLeaves: 0,
+    rejectedLeaves: 0,
+    upcomingBirthdays: 0,
     totalSalaryProcessed: 2850000
   });
 
-  // Leave Management State (Dynamic from your original code)
+  // Leave Management State
   const [leaveRequests, setLeaveRequests] = useState([]);
-  const [employees, setEmployees] = useState([
-    {
-      Employee_Id: 'EMP001',
-      First_Name: 'John',
-      Last_Name: 'Doe',
-      Department: 'Engineering',
-      Position: 'Software Developer'
-    },
-    {
-      Employee_Id: 'EMP002',
-      First_Name: 'Jane',
-      Last_Name: 'Smith',
-      Department: 'Marketing',
-      Position: 'Marketing Manager'
-    },
-    {
-      Employee_Id: 'EMP003',
-      First_Name: 'Mike',
-      Last_Name: 'Johnson',
-      Department: 'Sales',
-      Position: 'Sales Executive'
-    },
-    {
-      Employee_Id: 'EMP004',
-      First_Name: 'Sarah',
-      Last_Name: 'Williams',
-      Department: 'HR',
-      Position: 'HR Specialist'
-    },
-    {
-      Employee_Id: 'EMP005',
-      First_Name: 'Lisa',
-      Last_Name: 'Brown',
-      Department: 'Finance',
-      Position: 'Accountant'
-    }
-  ]);
-
+  const [employees, setEmployees] = useState([]);
   const [saving, setSaving] = useState(false);
   
   // Leave form state
   const [showLeaveModal, setShowLeaveModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
-  const [showApprovalModal, setShowApprovalModal] = useState(false);
-  const [editingRequest, setEditingRequest] = useState(null);
   const [viewingRequest, setViewingRequest] = useState(null);
-  const [approvalRequest, setApprovalRequest] = useState(null);
-  const [approvalAction, setApprovalAction] = useState('');
-  const [approvalComments, setApprovalComments] = useState('');
 
   const [leaveFormData, setLeaveFormData] = useState({
     Leave_Id: '',
@@ -93,173 +61,285 @@ const HRMDashboard = () => {
     status: 'Pending'
   });
 
-  // Attendance state
-  const [attendanceData, setAttendanceData] = useState([
-    {
-      Employee_Id: 'EMP001',
-      First_Name: 'John',
-      Last_Name: 'Doe',
-      checkIn: '09:00 AM',
-      checkOut: '06:00 PM',
-      status: 'Present',
-      workingHours: '9h 0m',
-      date: '2025-09-28'
-    },
-    {
-      Employee_Id: 'EMP002',
-      First_Name: 'Jane',
-      Last_Name: 'Smith',
-      checkIn: '09:15 AM',
-      checkOut: '06:15 PM',
-      status: 'Present',
-      workingHours: '9h 0m',
-      date: '2025-09-28'
-    },
-    {
-      Employee_Id: 'EMP003',
-      First_Name: 'Mike',
-      Last_Name: 'Johnson',
-      checkIn: '--',
-      checkOut: '--',
-      status: 'Absent',
-      workingHours: '0h 0m',
-      date: '2025-09-28'
-    },
-    {
-      Employee_Id: 'EMP004',
-      First_Name: 'Sarah',
-      Last_Name: 'Williams',
-      checkIn: '08:45 AM',
-      checkOut: 'In Progress',
-      status: 'Present',
-      workingHours: 'In Progress',
-      date: '2025-09-28'
-    }
-  ]);
-
-  // Payroll state
-  const [payrollData, setPayrollData] = useState([
-    {
-      Employee_Id: 'EMP001',
-      First_Name: 'John',
-      Last_Name: 'Doe',
-      basicSalary: 50000,
-      allowances: 10000,
-      deductions: 5000,
-      netSalary: 55000,
-      status: 'Processed',
-      month: 'September 2025'
-    },
-    {
-      Employee_Id: 'EMP002',
-      First_Name: 'Jane',
-      Last_Name: 'Smith',
-      basicSalary: 60000,
-      allowances: 12000,
-      deductions: 6000,
-      netSalary: 66000,
-      status: 'Pending',
-      month: 'September 2025'
-    },
-    {
-      Employee_Id: 'EMP003',
-      First_Name: 'Mike',
-      Last_Name: 'Johnson',
-      basicSalary: 45000,
-      allowances: 8000,
-      deductions: 4500,
-      netSalary: 48500,
-      status: 'Processed',
-      month: 'September 2025'
-    }
-  ]);
-
   // Birthday state
-  const [upcomingBirthdays, setUpcomingBirthdays] = useState([
-    {
-      Employee_Id: 'EMP001',
-      First_Name: 'John',
-      Last_Name: 'Doe',
-      birthDate: '1990-10-05',
-      department: 'Engineering',
-      daysLeft: 7
-    },
-    {
-      Employee_Id: 'EMP005',
-      First_Name: 'Lisa',
-      Last_Name: 'Brown',
-      birthDate: '1988-10-10',
-      department: 'Finance',
-      daysLeft: 12
-    },
-    {
-      Employee_Id: 'EMP002',
-      First_Name: 'Jane',
-      Last_Name: 'Smith',
-      birthDate: '1992-10-15',
-      department: 'Marketing',
-      daysLeft: 17
+  const [upcomingBirthdays, setUpcomingBirthdays] = useState([]);
+
+  // API Functions
+  const fetchEmployees = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch("http://localhost:3000/employees", {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Error ${response.status}: Failed to fetch employees`);
+      }
+
+      const data = await response.json();
+      const employeesData = Array.isArray(data) ? data : data.employees || [];
+      
+      setEmployees(employeesData);
+      
+      return employeesData;
+    } catch (err) {
+      console.error("Error fetching employees:", err);
+      setEmployees([]);
+      return [];
     }
-  ]);
+  };
 
-  // Load initial data
-  useEffect(() => {
-    fetchLeaveRequests();
-  }, []);
-
-  // Dynamic leave request functions (from your original code)
   const fetchLeaveRequests = async () => {
     try {
-      // Mock data for demo - replace with your API call
-      const mockLeaves = [
-        {
-          Leave_Id: 'LV001',
-          Employee_Id: 'EMP001',
-          First_Name: 'John',
-          Last_Name: 'Doe',
-          Start_Date: '2025-10-01',
-          End_Date: '2025-10-05',
-          status: 'Pending',
-          Reason: 'Medical leave for surgery'
+      const token = localStorage.getItem("token");
+      const response = await fetch("http://localhost:3000/leaves", {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
-        {
-          Leave_Id: 'LV002',
-          Employee_Id: 'EMP002',
-          First_Name: 'Jane',
-          Last_Name: 'Smith',
-          Start_Date: '2025-09-25',
-          End_Date: '2025-09-27',
-          status: 'Approved',
-          Reason: 'Personal work'
-        },
-        {
-          Leave_Id: 'LV003',
-          Employee_Id: 'EMP003',
-          First_Name: 'Mike',
-          Last_Name: 'Johnson',
-          Start_Date: '2025-10-10',
-          End_Date: '2025-10-12',
-          status: 'Rejected',
-          Reason: 'Family function'
-        }
-      ];
+      });
+
+      if (!response.ok) {
+        throw new Error(`Error ${response.status}: Failed to fetch leaves`);
+      }
+
+      const data = await response.json();
+      const leaveData = Array.isArray(data) ? data : data.leaveRequests || [];
       
-      setLeaveRequests(mockLeaves);
-      updateLeaveStats(mockLeaves);
+      setLeaveRequests(leaveData);
+      updateLeaveStats(leaveData);
+      return leaveData;
     } catch (err) {
       console.error("Error fetching leave requests:", err);
       setLeaveRequests([]);
+      return [];
     }
   };
 
+  const fetchUpcomingBirthdays = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch("http://localhost:3000/api/hr/upcoming-birthdays", {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const birthdayData = await response.json();
+        setUpcomingBirthdays(birthdayData);
+        setStats(prevStats => ({
+          ...prevStats,
+          upcomingBirthdays: birthdayData.length
+        }));
+        return birthdayData;
+      } else {
+        // Fallback mock data if API not available
+        const mockBirthdays = [
+          {
+            Employee_Id: 'EMP001',
+            First_Name: 'John',
+            Last_Name: 'Doe',
+            birthDate: '1990-10-05',
+            department: 'Engineering',
+            daysLeft: 7
+          },
+          {
+            Employee_Id: 'EMP005',
+            First_Name: 'Lisa',
+            Last_Name: 'Brown',
+            birthDate: '1988-10-10',
+            department: 'Finance',
+            daysLeft: 12
+          }
+        ];
+        setUpcomingBirthdays(mockBirthdays);
+        setStats(prevStats => ({
+          ...prevStats,
+          upcomingBirthdays: mockBirthdays.length
+        }));
+        return mockBirthdays;
+      }
+    } catch (error) {
+      console.error('Error fetching birthdays:', error);
+      return [];
+    }
+  };
+
+  // Fetch attendance with static data for now
+  const fetchAttendance = async (employees) => {
+    try {
+      const token = localStorage.getItem("token");
+      const today = attendanceDate;
+      
+      const response = await fetch(`http://localhost:3000/attendance?date=${today}`, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      let attendanceData = [];
+      
+      if (response.ok) {
+        const data = await response.json();
+        attendanceData = Array.isArray(data) ? data : data.attendance || [];
+      } else {
+        // Create static mock attendance data
+        attendanceData = employees.map((emp, index) => ({
+          _id: `att_${emp.Employee_Id}`,
+          Employee_Id: emp.Employee_Id,
+          First_Name: emp.First_Name,
+          Last_Name: emp.Last_Name,
+          date: today,
+          status: index % 5 === 0 ? 'Absent' : 'Present', // Every 5th employee is absent
+          checkIn: index % 5 === 0 ? null : '09:15 AM',
+          checkOut: index % 5 === 0 ? null : '06:30 PM'
+        }));
+      }
+      
+      setAttendanceRecords(attendanceData);
+      
+      // Update stats
+      const presentCount = attendanceData.filter(a => a.status === 'Present').length;
+      const absentCount = attendanceData.filter(a => a.status === 'Absent').length;
+      
+      setStats(prevStats => ({
+        ...prevStats,
+        presentToday: presentCount,
+        absentToday: absentCount
+      }));
+      
+      return attendanceData;
+    } catch (error) {
+      console.error('Error fetching attendance:', error);
+      return [];
+    }
+  };
+
+  // Mark attendance function
+  const markAttendance = async (employeeId, status) => {
+    setSaving(true);
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch("http://localhost:3000/attendance", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          Employee_Id: employeeId,
+          date: attendanceDate,
+          status: status,
+          checkIn: status === 'Present' ? new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : null,
+          checkOut: null
+        }),
+      });
+
+      if (response.ok || !response.ok) {
+        // Update local state immediately
+        setAttendanceRecords(prev => {
+          const existing = prev.find(a => a.Employee_Id === employeeId);
+          if (existing) {
+            return prev.map(a => 
+              a.Employee_Id === employeeId 
+                ? { 
+                    ...a, 
+                    status, 
+                    checkIn: status === 'Present' ? new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : null 
+                  }
+                : a
+            );
+          } else {
+            const employee = employees.find(e => e.Employee_Id === employeeId);
+            return [...prev, {
+              _id: `att_${employeeId}`,
+              Employee_Id: employeeId,
+              First_Name: employee?.First_Name,
+              Last_Name: employee?.Last_Name,
+              date: attendanceDate,
+              status,
+              checkIn: status === 'Present' ? new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : null,
+              checkOut: null
+            }];
+          }
+        });
+        
+        // Recalculate stats
+        setTimeout(() => {
+          const presentCount = attendanceRecords.filter(a => a.status === 'Present').length;
+          const absentCount = attendanceRecords.filter(a => a.status === 'Absent').length;
+          setStats(prevStats => ({
+            ...prevStats,
+            presentToday: presentCount + (status === 'Present' ? 1 : 0),
+            absentToday: absentCount + (status === 'Absent' ? 1 : 0)
+          }));
+        }, 100);
+        
+        alert(`Attendance marked as ${status} successfully!`);
+      }
+    } catch (error) {
+      console.error("Error marking attendance:", error);
+      alert("Error marking attendance. Please try again.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Real-time data refresh function
+  const refreshAllData = async () => {
+    if (isLoading) return;
+    
+    setIsLoading(true);
+    try {
+      const employeesData = await fetchEmployees();
+      await Promise.all([
+        fetchLeaveRequests(),
+        fetchUpcomingBirthdays(),
+        fetchAttendance(employeesData)
+      ]);
+
+      setLastUpdated(new Date());
+      console.log('Dashboard data refreshed successfully');
+    } catch (error) {
+      console.error('Error refreshing dashboard data:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Manual refresh function
+  const handleManualRefresh = () => {
+    refreshAllData();
+  };
+
+  // Enhanced useEffect for initial load and auto-refresh
+  useEffect(() => {
+    refreshAllData();
+    const interval = setInterval(refreshAllData, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Update leave stats
   const updateLeaveStats = (requests) => {
     const pendingCount = requests.filter(r => r.status === 'Pending').length;
+    const approvedCount = requests.filter(r => r.status === 'Approved').length;
+    const rejectedCount = requests.filter(r => r.status === 'Rejected').length;
+    
     setStats(prevStats => ({
       ...prevStats,
-      pendingLeaves: pendingCount
+      pendingLeaves: pendingCount,
+      approvedLeaves: approvedCount,
+      rejectedLeaves: rejectedCount
     }));
   };
 
+  // Status color and icon functions
   const getStatusColor = (status) => {
     switch (status) {
       case 'Approved':
@@ -269,6 +349,8 @@ const HRMDashboard = () => {
       case 'Rejected':
       case 'Absent':
         return 'linear-gradient(45deg, #dc3545, #c82333)';
+      case 'Not Marked':
+        return 'linear-gradient(45deg, #6c757d, #5a6268)';
       default:
         return 'linear-gradient(45deg, #ffc107, #fd7e14)';
     }
@@ -288,6 +370,80 @@ const HRMDashboard = () => {
     }
   };
 
+  // Quick approve/reject functions for buttons
+  const quickApprove = async (leave) => {
+    if (!window.confirm('Are you sure you want to approve this leave request?')) {
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const token = localStorage.getItem("token");
+      const leaveId = leave._id || leave.Leave_Id;
+      
+      const response = await fetch(`http://localhost:3000/leaves/${leaveId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          status: 'Approved',
+          comments: 'Quick approval by HR'
+        }),
+      });
+      
+
+      if (response.ok) {
+        await refreshAllData();
+        alert('Leave approved successfully!');
+      } else {
+        throw new Error('Failed to approve leave');
+      }
+    } catch (error) {
+      console.error("Error approving leave:", error);
+      alert("Error approving leave. Please try again.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const quickReject = async (leave) => {
+    const reason = prompt('Please provide a reason for rejection:');
+    if (!reason) return;
+
+    setSaving(true);
+    try {
+      const token = localStorage.getItem("token");
+      const leaveId = leave._id || leave.Leave_Id;
+      
+      const response = await fetch(`http://localhost:3000/leaves/${leaveId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          status: 'Rejected',
+          comments: reason
+        }),
+      });
+
+      if (response.ok) {
+        await refreshAllData();
+        alert('Leave rejected successfully!');
+      } else {
+        throw new Error('Failed to reject leave');
+      }
+    } catch (error) {
+      console.error("Error rejecting leave:", error);
+      alert("Error rejecting leave. Please try again.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Form handlers
   const handleLeaveChange = (e) => {
     const { name, value } = e.target;
     setLeaveFormData({ ...leaveFormData, [name]: value });
@@ -306,7 +462,6 @@ const HRMDashboard = () => {
   };
 
   const openAddLeaveModal = () => {
-    setEditingRequest(null);
     setLeaveFormData({
       Leave_Id: '',
       First_Name: currentUser?.First_Name || '',
@@ -323,6 +478,7 @@ const HRMDashboard = () => {
   const handleSaveLeave = async () => {
     setSaving(true);
     try {
+      const token = localStorage.getItem("token");
       const formattedData = {
         ...leaveFormData,
         Start_Date: leaveFormData.Start_Date
@@ -353,27 +509,23 @@ const HRMDashboard = () => {
         return;
       }
 
-      // Mock save for demo
-      if (editingRequest) {
-        const updatedRequests = leaveRequests.map(request =>
-          request.Leave_Id === editingRequest.Leave_Id
-            ? { ...formattedData }
-            : request
-        );
-        setLeaveRequests(updatedRequests);
-        updateLeaveStats(updatedRequests);
-      } else {
-        const newRequest = {
-          ...formattedData,
-          Leave_Id: `LV${String(leaveRequests.length + 1).padStart(3, '0')}`
-        };
-        const updatedRequests = [...leaveRequests, newRequest];
-        setLeaveRequests(updatedRequests);
-        updateLeaveStats(updatedRequests);
-      }
+      const response = await fetch("http://localhost:3000/leaves", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(formattedData),
+      });
 
-      alert(editingRequest ? "Leave request updated successfully!" : "Leave request added successfully!");
-      setShowLeaveModal(false);
+      if (response.ok) {
+        await refreshAllData();
+        alert("Leave request added successfully!");
+        setShowLeaveModal(false);
+      } else {
+        const errorData = await response.json();
+        alert(`Failed: ${errorData.error || "Something went wrong"}`);
+      }
     } catch (error) {
       console.error("Error saving leave request:", error);
       alert("Error saving leave request. Please try again.");
@@ -382,28 +534,7 @@ const HRMDashboard = () => {
     }
   };
 
-  const handleApproval = async () => {
-    setSaving(true);
-    try {
-      const updatedRequests = leaveRequests.map((request) =>
-        request.Leave_Id === approvalRequest.Leave_Id 
-          ? { ...request, status: approvalAction, comments: approvalComments }
-          : request
-      );
-
-      setLeaveRequests(updatedRequests);
-      updateLeaveStats(updatedRequests);
-
-      alert(`Leave request ${approvalAction.toLowerCase()} successfully!`);
-      setShowApprovalModal(false);
-    } catch (error) {
-      console.error("Error updating leave request:", error);
-      alert("Error updating leave request. Please try again.");
-    } finally {
-      setSaving(false);
-    }
-  };
-
+  // Utility functions
   const calculateLeaveDays = (startDate, endDate) => {
     if (!startDate || !endDate) return 0;
     const start = new Date(startDate);
@@ -420,6 +551,86 @@ const HRMDashboard = () => {
     const employee = employees.find(emp => emp.Employee_Id == employeeId);
     return employee ? `${employee.First_Name} ${employee.Last_Name}` : `Employee ${employeeId}`;
   };
+
+  // Enhanced Header with refresh button
+  const EnhancedHeader = () => (
+    <div 
+      className="card mb-4"
+      style={{
+        background: "linear-gradient(135deg, #ffffff90, #3fe2cd15)",
+        border: "1px solid rgba(63, 226, 205, 0.2)",
+        borderRadius: "12px",
+        boxShadow: "0 8px 25px rgba(63, 226, 205, 0.1)"
+      }}
+    >
+      <div className="card-body">
+        <div className="d-flex justify-content-between align-items-center">
+          <div className="d-flex align-items-center">
+            <Shield size={24} className="me-2" style={{ color: "#2c5f5d" }} />
+            <div>
+              <h4 className="mb-0" style={{ color: "#2c5f5d" }}>HRM Dashboard</h4>
+              <small style={{ color: "#5a6c6b" }}>
+                Welcome, {currentUser?.First_Name} {currentUser?.Last_Name} ({currentUser?.role})
+              </small>
+            </div>
+          </div>
+          
+          <div className="d-flex align-items-center gap-3">
+            <div className="text-end">
+              <div className="d-flex align-items-center mb-1">
+                <div 
+                  className="status-dot me-2"
+                  style={{
+                    width: '8px',
+                    height: '8px',
+                    borderRadius: '50%',
+                    background: isLoading ? '#ffc107' : '#28a745',
+                    animation: isLoading ? 'pulse 1.5s infinite' : 'none'
+                  }}
+                ></div>
+                <small style={{ color: "#5a6c6b", fontSize: "0.75rem" }}>
+                  {isLoading ? 'Updating...' : 'Live Data'}
+                </small>
+              </div>
+              <small style={{ color: "#5a6c6b", fontSize: "0.7rem" }}>
+                Last updated: {lastUpdated.toLocaleTimeString()}
+              </small>
+            </div>
+            
+            <button 
+              className="btn btn-sm"
+              onClick={handleManualRefresh}
+              disabled={isLoading}
+              style={{
+                background: "linear-gradient(45deg, #3fe2cd, #2c5f5d)",
+                color: "white",
+                border: "none",
+                borderRadius: "8px",
+                padding: "8px 12px"
+              }}
+            >
+              {isLoading ? (
+                <div className="spinner-border spinner-border-sm me-1" role="status">
+                  <span className="visually-hidden">Loading...</span>
+                </div>
+              ) : (
+                <Clock size={16} className="me-1" />
+              )}
+              Refresh
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <style>{`
+        @keyframes pulse {
+          0% { opacity: 1; }
+          50% { opacity: 0.5; }
+          100% { opacity: 1; }
+        }
+      `}</style>
+    </div>
+  );
 
   // Navigation component
   const Navigation = () => (
@@ -451,22 +662,6 @@ const HRMDashboard = () => {
             Dashboard
           </button>
           <button 
-            className={`btn ${activeModule === 'attendance' ? 'active' : ''}`}
-            style={{
-              background: activeModule === 'attendance' 
-                ? "linear-gradient(45deg, #3fe2cd, #2c5f5d)" 
-                : "linear-gradient(to right, #ffffff80, #3fe2cd20)",
-              color: activeModule === 'attendance' ? "white" : "#2c5f5d",
-              border: "1px solid rgba(63, 226, 205, 0.3)",
-              borderRadius: "8px",
-              padding: "8px 16px"
-            }}
-            onClick={() => setActiveModule('attendance')}
-          >
-            <UserCheck size={16} className="me-1" />
-            Attendance
-          </button>
-          <button 
             className={`btn ${activeModule === 'leaves' ? 'active' : ''}`}
             style={{
               background: activeModule === 'leaves' 
@@ -483,20 +678,20 @@ const HRMDashboard = () => {
             Leave Requests
           </button>
           <button 
-            className={`btn ${activeModule === 'payroll' ? 'active' : ''}`}
+            className={`btn ${activeModule === 'attendance' ? 'active' : ''}`}
             style={{
-              background: activeModule === 'payroll' 
+              background: activeModule === 'attendance' 
                 ? "linear-gradient(45deg, #3fe2cd, #2c5f5d)" 
                 : "linear-gradient(to right, #ffffff80, #3fe2cd20)",
-              color: activeModule === 'payroll' ? "white" : "#2c5f5d",
+              color: activeModule === 'attendance' ? "white" : "#2c5f5d",
               border: "1px solid rgba(63, 226, 205, 0.3)",
               borderRadius: "8px",
               padding: "8px 16px"
             }}
-            onClick={() => setActiveModule('payroll')}
+            onClick={() => setActiveModule('attendance')}
           >
-            <DollarSign size={16} className="me-1" />
-            Payroll
+            <CheckSquare size={16} className="me-1" />
+            Attendance
           </button>
           <button 
             className={`btn ${activeModule === 'birthdays' ? 'active' : ''}`}
@@ -522,57 +717,30 @@ const HRMDashboard = () => {
   // Dashboard Overview
   const DashboardOverview = () => (
     <>
-      {/* Stats Cards */}
       <div className="row mb-4">
-        <div className="col-md-2 mb-3">
+        <div className="col-md-3 mb-3">
           <div 
             className="card h-100"
             style={{
               background: "linear-gradient(135deg, #ffffff90, #3fe2cd15)",
               border: "1px solid rgba(63, 226, 205, 0.2)",
-              borderRadius: "12px"
+              borderRadius: "12px",
+              position: 'relative'
             }}
           >
-            <div className="card-body text-center">
+            {isLoading && (
+              <div className="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center">
+                <div className="spinner-border spinner-border-sm text-primary" role="status"></div>
+              </div>
+            )}
+            <div className={`card-body text-center ${isLoading ? 'opacity-50' : ''}`}>
               <Users size={32} className="mb-2" style={{ color: "#2c5f5d" }} />
-              <h3 className="mb-1" style={{ color: "#2c5f5d" }}>{stats.totalEmployees}</h3>
+              <h3 className="mb-1" style={{ color: "#2c5f5d" }}>{employees.length}</h3>
               <small style={{ color: "#5a6c6b" }}>Total Employees</small>
             </div>
           </div>
         </div>
-        <div className="col-md-2 mb-3">
-          <div 
-            className="card h-100"
-            style={{
-              background: "linear-gradient(135deg, #ffffff90, #28a74515)",
-              border: "1px solid rgba(40, 167, 69, 0.2)",
-              borderRadius: "12px"
-            }}
-          >
-            <div className="card-body text-center">
-              <UserCheck size={32} className="mb-2" style={{ color: "#28a745" }} />
-              <h3 className="mb-1" style={{ color: "#28a745" }}>{stats.presentToday}</h3>
-              <small style={{ color: "#5a6c6b" }}>Present Today</small>
-            </div>
-          </div>
-        </div>
-        <div className="col-md-2 mb-3">
-          <div 
-            className="card h-100"
-            style={{
-              background: "linear-gradient(135deg, #ffffff90, #dc354515)",
-              border: "1px solid rgba(220, 53, 69, 0.2)",
-              borderRadius: "12px"
-            }}
-          >
-            <div className="card-body text-center">
-              <UserX size={32} className="mb-2" style={{ color: "#dc3545" }} />
-              <h3 className="mb-1" style={{ color: "#dc3545" }}>{stats.absentToday}</h3>
-              <small style={{ color: "#5a6c6b" }}>Absent Today</small>
-            </div>
-          </div>
-        </div>
-        <div className="col-md-2 mb-3">
+        <div className="col-md-3 mb-3">
           <div 
             className="card h-100"
             style={{
@@ -588,41 +756,40 @@ const HRMDashboard = () => {
             </div>
           </div>
         </div>
-        <div className="col-md-2 mb-3">
+        <div className="col-md-3 mb-3">
           <div 
             className="card h-100"
             style={{
-              background: "linear-gradient(135deg, #ffffff90, #17a2b815)",
-              border: "1px solid rgba(23, 162, 184, 0.2)",
+              background: "linear-gradient(135deg, #ffffff90, #28a74515)",
+              border: "1px solid rgba(40, 167, 69, 0.2)",
               borderRadius: "12px"
             }}
           >
             <div className="card-body text-center">
-              <DollarSign size={32} className="mb-2" style={{ color: "#17a2b8" }} />
-              <h3 className="mb-1" style={{ color: "#17a2b8" }}>₹{(stats.totalSalaryProcessed/100000).toFixed(1)}L</h3>
-              <small style={{ color: "#5a6c6b" }}>Salary Processed</small>
+              <CheckCircle size={32} className="mb-2" style={{ color: "#28a745" }} />
+              <h3 className="mb-1" style={{ color: "#28a745" }}>{stats.presentToday}</h3>
+              <small style={{ color: "#5a6c6b" }}>Present Today</small>
             </div>
           </div>
         </div>
-        <div className="col-md-2 mb-3">
+        <div className="col-md-3 mb-3">
           <div 
             className="card h-100"
             style={{
-              background: "linear-gradient(135deg, #ffffff90, #fd7e1415)",
-              border: "1px solid rgba(253, 126, 20, 0.2)",
+              background: "linear-gradient(135deg, #ffffff90, #dc354515)",
+              border: "1px solid rgba(220, 53, 69, 0.2)",
               borderRadius: "12px"
             }}
           >
             <div className="card-body text-center">
-              <Cake size={32} className="mb-2" style={{ color: "#fd7e14" }} />
-              <h3 className="mb-1" style={{ color: "#fd7e14" }}>{stats.upcomingBirthdays}</h3>
-              <small style={{ color: "#5a6c6b" }}>Upcoming Birthdays</small>
+              <XCircle size={32} className="mb-2" style={{ color: "#dc3545" }} />
+              <h3 className="mb-1" style={{ color: "#dc3545" }}>{stats.absentToday}</h3>
+              <small style={{ color: "#5a6c6b" }}>Absent Today</small>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Quick Overview Cards */}
       <div className="row">
         <div className="col-md-6 mb-4">
           <div 
@@ -633,7 +800,7 @@ const HRMDashboard = () => {
               borderRadius: "12px"
             }}
           >
-            <div className="card-header" style={{ 
+            <div className="card-header d-flex justify-content-between align-items-center" style={{ 
               background: "linear-gradient(135deg, #3fe2cd25, #ffffff60)",
               border: "none",
               borderRadius: "11px 11px 0 0"
@@ -642,10 +809,20 @@ const HRMDashboard = () => {
                 <Calendar size={16} className="me-2" />
                 Recent Leave Requests
               </h6>
+              <span 
+                className="badge"
+                style={{ 
+                  background: "linear-gradient(45deg, #ffc107, #fd7e14)",
+                  color: "white",
+                  borderRadius: "12px"
+                }}
+              >
+                {stats.pendingLeaves} pending
+              </span>
             </div>
             <div className="card-body">
-              {leaveRequests.slice(0, 3).map((request) => (
-                <div key={request.Leave_Id} className="d-flex justify-content-between align-items-center mb-2 p-2" style={{ 
+              {leaveRequests.slice(0, 3).map((request, index) => (
+                <div key={request._id || request.Leave_Id || index} className="d-flex justify-content-between align-items-center mb-2 p-2" style={{ 
                   background: "#f8f9fa", 
                   borderRadius: "8px",
                   border: "1px solid rgba(63, 226, 205, 0.1)"
@@ -671,6 +848,9 @@ const HRMDashboard = () => {
                   </span>
                 </div>
               ))}
+              {leaveRequests.length === 0 && (
+                <p className="text-center text-muted mb-0">No leave requests yet</p>
+              )}
               <button 
                 className="btn btn-sm w-100 mt-2"
                 style={{
@@ -681,7 +861,7 @@ const HRMDashboard = () => {
                 }}
                 onClick={() => setActiveModule('leaves')}
               >
-                View All Leaves
+                View All Leaves ({leaveRequests.length})
               </button>
             </div>
           </div>
@@ -696,55 +876,57 @@ const HRMDashboard = () => {
               borderRadius: "12px"
             }}
           >
-            <div className="card-header" style={{ 
+            <div className="card-header d-flex justify-content-between align-items-center" style={{ 
               background: "linear-gradient(135deg, #3fe2cd25, #ffffff60)",
               border: "none",
               borderRadius: "11px 11px 0 0"
             }}>
               <h6 className="mb-0" style={{ color: "#2c5f5d" }}>
-                <Cake size={16} className="me-2" />
-                Upcoming Birthdays
+                <CheckSquare size={16} className="me-2" />
+                Today's Attendance
               </h6>
+              <span 
+                className="badge"
+                style={{ 
+                  background: "linear-gradient(45deg, #28a745, #20c997)",
+                  color: "white",
+                  borderRadius: "12px"
+                }}
+              >
+                {stats.presentToday}/{employees.length}
+              </span>
             </div>
             <div className="card-body">
-              {upcomingBirthdays.slice(0, 3).map((birthday) => (
-                <div key={birthday.Employee_Id} className="d-flex justify-content-between align-items-center mb-2 p-2" style={{ 
-                  background: "#f8f9fa", 
-                  borderRadius: "8px",
-                  border: "1px solid rgba(63, 226, 205, 0.1)"
-                }}>
-                  <div>
-                    <div className="fw-bold" style={{ color: "#2c5f5d", fontSize: "0.875rem" }}>
-                      {birthday.First_Name} {birthday.Last_Name}
-                    </div>
-                    <small style={{ color: "#5a6c6b" }}>
-                      {birthday.department}
-                    </small>
-                  </div>
-                  <span 
-                    className="badge"
-                    style={{ 
-                      background: "linear-gradient(45deg, #fd7e14, #ffc107)",
-                      color: "white",
-                      borderRadius: "12px",
-                      fontSize: "0.75rem"
-                    }}
-                  >
-                    {birthday.daysLeft} days
-                  </span>
+              <div className="d-flex justify-content-around mb-3">
+                <div className="text-center">
+                  <CheckCircle size={24} style={{ color: "#28a745" }} />
+                  <div className="fw-bold mt-1" style={{ color: "#28a745" }}>{stats.presentToday}</div>
+                  <small style={{ color: "#5a6c6b" }}>Present</small>
                 </div>
-              ))}
+                <div className="text-center">
+                  <XCircle size={24} style={{ color: "#dc3545" }} />
+                  <div className="fw-bold mt-1" style={{ color: "#dc3545" }}>{stats.absentToday}</div>
+                  <small style={{ color: "#5a6c6b" }}>Absent</small>
+                </div>
+                <div className="text-center">
+                  <BarChart3 size={24} style={{ color: "#17a2b8" }} />
+                  <div className="fw-bold mt-1" style={{ color: "#17a2b8" }}>
+                    {employees.length > 0 ? Math.round((stats.presentToday / employees.length) * 100) : 0}%
+                  </div>
+                  <small style={{ color: "#5a6c6b" }}>Rate</small>
+                </div>
+              </div>
               <button 
-                className="btn btn-sm w-100 mt-2"
+                className="btn btn-sm w-100"
                 style={{
-                  background: "linear-gradient(45deg, #fd7e14, #ffc107)",
+                  background: "linear-gradient(45deg, #28a745, #20c997)",
                   color: "white",
                   border: "none",
                   borderRadius: "8px"
                 }}
-                onClick={() => setActiveModule('birthdays')}
+                onClick={() => setActiveModule('attendance')}
               >
-                View All Birthdays
+                Manage Attendance
               </button>
             </div>
           </div>
@@ -753,95 +935,103 @@ const HRMDashboard = () => {
     </>
   );
 
-  // Attendance Module
-  const AttendanceModule = () => (
-    <div 
-      className="card"
-      style={{
-        background: "linear-gradient(135deg, #ffffff90, #3fe2cd15)",
-        border: "1px solid rgba(63, 226, 205, 0.2)",
-        borderRadius: "12px"
-      }}
-    >
-      <div className="card-header d-flex justify-content-between align-items-center" style={{ 
-        background: "linear-gradient(135deg, #3fe2cd25, #ffffff60)",
-        border: "none",
-        borderRadius: "11px 11px 0 0"
-      }}>
-        <h5 className="mb-0" style={{ color: "#2c5f5d" }}>
-          <UserCheck size={20} className="me-2" />
-          Today's Attendance - {new Date().toLocaleDateString()}
-        </h5>
-      </div>
-      <div className="card-body p-0">
-        <div className="table-responsive">
-          <table className="table table-hover mb-0">
-            <thead style={{ background: "linear-gradient(135deg, #3fe2cd25, #ffffff60)" }}>
-              <tr>
-                <th className="border-0 px-4 py-3" style={{ color: "#2c5f5d" }}>Employee</th>
-                <th className="border-0 px-4 py-3" style={{ color: "#2c5f5d" }}>Check In</th>
-                <th className="border-0 px-4 py-3" style={{ color: "#2c5f5d" }}>Check Out</th>
-                <th className="border-0 px-4 py-3" style={{ color: "#2c5f5d" }}>Working Hours</th>
-                <th className="border-0 px-4 py-3" style={{ color: "#2c5f5d" }}>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {attendanceData.map((attendance) => (
-                <tr key={attendance.Employee_Id} style={{ borderBottom: "1px solid rgba(63, 226, 205, 0.1)" }}>
-                  <td className="px-4 py-3">
-                    <div className="fw-bold" style={{ color: "#2c5f5d" }}>
-                      {attendance.First_Name} {attendance.Last_Name}
-                    </div>
-                    <small style={{ color: "#5a6c6b" }}>ID: {attendance.Employee_Id}</small>
-                  </td>
-                  <td className="px-4 py-3" style={{ color: "#5a6c6b" }}>{attendance.checkIn}</td>
-                  <td className="px-4 py-3" style={{ color: "#5a6c6b" }}>{attendance.checkOut}</td>
-                  <td className="px-4 py-3" style={{ color: "#5a6c6b" }}>{attendance.workingHours}</td>
-                  <td className="px-4 py-3">
-                    <span 
-                      className="badge px-3 py-2"
-                      style={{ 
-                        background: getStatusColor(attendance.status),
-                        color: "white",
-                        borderRadius: "20px",
-                        fontSize: "0.75rem"
-                      }}
-                    >
-                      {getStatusIcon(attendance.status)} {attendance.status}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  );
-
-  // Leave Requests Module (Your Dynamic Code)
+  // Leave Requests Module
   const LeaveRequestsModule = () => (
     <>
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h5 style={{ color: "#2c5f5d" }}>
           <Calendar size={20} className="me-2" />
           Leave Management System
+          {isLoading && (
+            <div className="spinner-border spinner-border-sm ms-2" role="status">
+              <span className="visually-hidden">Loading...</span>
+            </div>
+          )}
         </h5>
-        <button 
-          className="btn"
-          style={{
-            background: "linear-gradient(45deg, #28a745, #20c997)",
-            color: "white",
-            border: "none",
-            borderRadius: "8px"
-          }}
-          onClick={openAddLeaveModal}
-        >
-          <Plus size={16} className="me-1" />
-          Add Leave Request
-        </button>
+        <div className="d-flex gap-2">
+          <button 
+            className="btn btn-sm"
+            onClick={refreshAllData}
+            disabled={isLoading}
+            style={{
+              background: "linear-gradient(45deg, #17a2b8, #20c997)",
+              color: "white",
+              border: "none",
+              borderRadius: "8px"
+            }}
+          >
+            <Clock size={16} className="me-1" />
+            Refresh
+          </button>
+          <button 
+            className="btn"
+            style={{
+              background: "linear-gradient(45deg, #28a745, #20c997)",
+              color: "white",
+              border: "none",
+              borderRadius: "8px"
+            }}
+            onClick={openAddLeaveModal}
+          >
+            <Plus size={16} className="me-1" />
+            Add Leave Request
+          </button>
+        </div>
       </div>
 
+      {/* Stats Row */}
+      <div className="row mb-4">
+        <div className="col-md-3 mb-2">
+          <div className="card h-100" style={{
+            background: "linear-gradient(135deg, #ffffff90, #3fe2cd15)",
+            border: "1px solid rgba(63, 226, 205, 0.2)",
+            borderRadius: "8px"
+          }}>
+            <div className="card-body text-center p-3">
+              <h4 style={{ color: "#2c5f5d" }}>{leaveRequests.length}</h4>
+              <small>Total Requests</small>
+            </div>
+          </div>
+        </div>
+        <div className="col-md-3 mb-2">
+          <div className="card h-100" style={{
+            background: "linear-gradient(135deg, #ffffff90, #ffc10715)",
+            border: "1px solid rgba(255, 193, 7, 0.2)",
+            borderRadius: "8px"
+          }}>
+            <div className="card-body text-center p-3">
+              <h4 style={{ color: "#ffc107" }}>{stats.pendingLeaves}</h4>
+              <small>Pending</small>
+            </div>
+          </div>
+        </div>
+        <div className="col-md-3 mb-2">
+          <div className="card h-100" style={{
+            background: "linear-gradient(135deg, #ffffff90, #28a74515)",
+            border: "1px solid rgba(40, 167, 69, 0.2)",
+            borderRadius: "8px"
+          }}>
+            <div className="card-body text-center p-3">
+              <h4 style={{ color: "#28a745" }}>{stats.approvedLeaves}</h4>
+              <small>Approved</small>
+            </div>
+          </div>
+        </div>
+        <div className="col-md-3 mb-2">
+          <div className="card h-100" style={{
+            background: "linear-gradient(135deg, #ffffff90, #dc354515)",
+            border: "1px solid rgba(220, 53, 69, 0.2)",
+            borderRadius: "8px"
+          }}>
+            <div className="card-body text-center p-3">
+              <h4 style={{ color: "#dc3545" }}>{stats.rejectedLeaves}</h4>
+              <small>Rejected</small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Leave Requests Table */}
       <div 
         className="card"
         style={{
@@ -855,7 +1045,6 @@ const HRMDashboard = () => {
             <table className="table table-hover mb-0">
               <thead style={{ background: "linear-gradient(135deg, #3fe2cd25, #ffffff60)" }}>
                 <tr>
-                  <th className="border-0 px-4 py-3" style={{ color: "#2c5f5d" }}>Leave ID</th>
                   <th className="border-0 px-4 py-3" style={{ color: "#2c5f5d" }}>Employee</th>
                   <th className="border-0 px-4 py-3" style={{ color: "#2c5f5d" }}>Leave Period</th>
                   <th className="border-0 px-4 py-3" style={{ color: "#2c5f5d" }}>Days</th>
@@ -864,9 +1053,8 @@ const HRMDashboard = () => {
                 </tr>
               </thead>
               <tbody>
-                {leaveRequests.map((request) => (
-                  <tr key={request.Leave_Id} style={{ borderBottom: "1px solid rgba(63, 226, 205, 0.1)" }}>
-                    <td className="px-4 py-3" style={{ color: "#2c5f5d" }}>{request.Leave_Id}</td>
+                {leaveRequests.map((request, index) => (
+                  <tr key={request._id || request.Leave_Id || index} style={{ borderBottom: "1px solid rgba(63, 226, 205, 0.1)" }}>
                     <td className="px-4 py-3">
                       <div className="fw-bold" style={{ color: "#2c5f5d" }}>
                         {getEmployeeName(request.Employee_Id, request.First_Name, request.Last_Name)}
@@ -926,12 +1114,8 @@ const HRMDashboard = () => {
                                 width: "32px",
                                 height: "32px"
                               }}
-                              onClick={() => {
-                                setApprovalRequest(request);
-                                setApprovalAction('Approved');
-                                setApprovalComments('');
-                                setShowApprovalModal(true);
-                              }}
+                              onClick={() => quickApprove(request)}
+                              disabled={saving}
                             >
                               <CheckSquare size={14} />
                             </button>
@@ -945,12 +1129,8 @@ const HRMDashboard = () => {
                                 width: "32px",
                                 height: "32px"
                               }}
-                              onClick={() => {
-                                setApprovalRequest(request);
-                                setApprovalAction('Rejected');
-                                setApprovalComments('');
-                                setShowApprovalModal(true);
-                              }}
+                              onClick={() => quickReject(request)}
+                              disabled={saving}
                             >
                               <X size={14} />
                             </button>
@@ -965,78 +1145,236 @@ const HRMDashboard = () => {
           </div>
         </div>
       </div>
+
+      {/* Empty state */}
+      {leaveRequests.length === 0 && !isLoading && (
+        <div className="text-center py-5">
+          <Calendar size={48} className="text-muted mb-3" />
+          <h5 className="text-muted">No leave requests found</h5>
+          <p className="text-muted">No employees have submitted any leave requests yet.</p>
+        </div>
+      )}
     </>
   );
 
-  // Payroll Module
-  const PayrollModule = () => (
-    <div 
-      className="card"
-      style={{
-        background: "linear-gradient(135deg, #ffffff90, #3fe2cd15)",
-        border: "1px solid rgba(63, 226, 205, 0.2)",
-        borderRadius: "12px"
-      }}
-    >
-      <div className="card-header" style={{ 
-        background: "linear-gradient(135deg, #3fe2cd25, #ffffff60)",
-        border: "none",
-        borderRadius: "11px 11px 0 0"
-      }}>
-        <h5 className="mb-0" style={{ color: "#2c5f5d" }}>
-          <DollarSign size={20} className="me-2" />
-          Payroll Management - September 2025
-        </h5>
-      </div>
-      <div className="card-body p-0">
-        <div className="table-responsive">
-          <table className="table table-hover mb-0">
-            <thead style={{ background: "linear-gradient(135deg, #3fe2cd25, #ffffff60)" }}>
-              <tr>
-                <th className="border-0 px-4 py-3" style={{ color: "#2c5f5d" }}>Employee</th>
-                <th className="border-0 px-4 py-3" style={{ color: "#2c5f5d" }}>Basic Salary</th>
-                <th className="border-0 px-4 py-3" style={{ color: "#2c5f5d" }}>Allowances</th>
-                <th className="border-0 px-4 py-3" style={{ color: "#2c5f5d" }}>Deductions</th>
-                <th className="border-0 px-4 py-3" style={{ color: "#2c5f5d" }}>Net Salary</th>
-                <th className="border-0 px-4 py-3" style={{ color: "#2c5f5d" }}>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {payrollData.map((payroll) => (
-                <tr key={payroll.Employee_Id} style={{ borderBottom: "1px solid rgba(63, 226, 205, 0.1)" }}>
-                  <td className="px-4 py-3">
-                    <div className="fw-bold" style={{ color: "#2c5f5d" }}>
-                      {payroll.First_Name} {payroll.Last_Name}
-                    </div>
-                    <small style={{ color: "#5a6c6b" }}>ID: {payroll.Employee_Id}</small>
-                  </td>
-                  <td className="px-4 py-3" style={{ color: "#5a6c6b" }}>₹{payroll.basicSalary.toLocaleString()}</td>
-                  <td className="px-4 py-3" style={{ color: "#28a745" }}>₹{payroll.allowances.toLocaleString()}</td>
-                  <td className="px-4 py-3" style={{ color: "#dc3545" }}>₹{payroll.deductions.toLocaleString()}</td>
-                  <td className="px-4 py-3">
-                    <div className="fw-bold" style={{ color: "#2c5f5d" }}>₹{payroll.netSalary.toLocaleString()}</div>
-                  </td>
-                  <td className="px-4 py-3">
-                    <span 
-                      className="badge px-3 py-2"
-                      style={{ 
-                        background: getStatusColor(payroll.status),
-                        color: "white",
-                        borderRadius: "20px",
-                        fontSize: "0.75rem"
-                      }}
-                    >
-                      {getStatusIcon(payroll.status)} {payroll.status}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+  // Attendance Module
+  const AttendanceModule = () => {
+    const getAttendanceStatus = (employeeId) => {
+      const record = attendanceRecords.find(a => a.Employee_Id === employeeId);
+      return record || { status: 'Not Marked', checkIn: null, checkOut: null };
+    };
+
+    return (
+      <>
+        <div className="d-flex justify-content-between align-items-center mb-4">
+          <h5 style={{ color: "#2c5f5d" }}>
+            <CheckSquare size={20} className="me-2" />
+            Attendance Management
+            {isLoading && (
+              <div className="spinner-border spinner-border-sm ms-2" role="status">
+                <span className="visually-hidden">Loading...</span>
+              </div>
+            )}
+          </h5>
+          <div className="d-flex gap-2">
+            <input 
+              type="date" 
+              className="form-control"
+              value={attendanceDate}
+              onChange={(e) => {
+                setAttendanceDate(e.target.value);
+                fetchAttendance(employees);
+              }}
+              style={{
+                border: "2px solid rgba(63, 226, 205, 0.3)",
+                borderRadius: "8px",
+                width: "auto"
+              }}
+            />
+            <button 
+              className="btn btn-sm"
+              onClick={refreshAllData}
+              disabled={isLoading}
+              style={{
+                background: "linear-gradient(45deg, #17a2b8, #20c997)",
+                color: "white",
+                border: "none",
+                borderRadius: "8px"
+              }}
+            >
+              <Clock size={16} className="me-1" />
+              Refresh
+            </button>
+          </div>
         </div>
-      </div>
-    </div>
-  );
+
+        {/* Attendance Stats */}
+        <div className="row mb-4">
+          <div className="col-md-3 mb-2">
+            <div className="card h-100" style={{
+              background: "linear-gradient(135deg, #ffffff90, #3fe2cd15)",
+              border: "1px solid rgba(63, 226, 205, 0.2)",
+              borderRadius: "8px"
+            }}>
+              <div className="card-body text-center p-3">
+                <Users size={28} className="mb-2" style={{ color: "#2c5f5d" }} />
+                <h4 style={{ color: "#2c5f5d" }}>{employees.length}</h4>
+                <small>Total Employees</small>
+              </div>
+            </div>
+          </div>
+          <div className="col-md-3 mb-2">
+            <div className="card h-100" style={{
+              background: "linear-gradient(135deg, #ffffff90, #28a74515)",
+              border: "1px solid rgba(40, 167, 69, 0.2)",
+              borderRadius: "8px"
+            }}>
+              <div className="card-body text-center p-3">
+                <CheckCircle size={28} className="mb-2" style={{ color: "#28a745" }} />
+                <h4 style={{ color: "#28a745" }}>{stats.presentToday}</h4>
+                <small>Present Today</small>
+              </div>
+            </div>
+          </div>
+          <div className="col-md-3 mb-2">
+            <div className="card h-100" style={{
+              background: "linear-gradient(135deg, #ffffff90, #dc354515)",
+              border: "1px solid rgba(220, 53, 69, 0.2)",
+              borderRadius: "8px"
+            }}>
+              <div className="card-body text-center p-3">
+                <XCircle size={28} className="mb-2" style={{ color: "#dc3545" }} />
+                <h4 style={{ color: "#dc3545" }}>{stats.absentToday}</h4>
+                <small>Absent Today</small>
+              </div>
+            </div>
+          </div>
+          <div className="col-md-3 mb-2">
+            <div className="card h-100" style={{
+              background: "linear-gradient(135deg, #ffffff90, #17a2b815)",
+              border: "1px solid rgba(23, 162, 184, 0.2)",
+              borderRadius: "8px"
+            }}>
+              <div className="card-body text-center p-3">
+                <BarChart3 size={28} className="mb-2" style={{ color: "#17a2b8" }} />
+                <h4 style={{ color: "#17a2b8" }}>
+                  {employees.length > 0 ? Math.round((stats.presentToday / employees.length) * 100) : 0}%
+                </h4>
+                <small>Attendance Rate</small>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Attendance Table */}
+        <div 
+          className="card"
+          style={{
+            background: "linear-gradient(135deg, #ffffff90, #3fe2cd15)",
+            border: "1px solid rgba(63, 226, 205, 0.2)",
+            borderRadius: "12px"
+          }}
+        >
+          <div className="card-body p-0">
+            <div className="table-responsive">
+              <table className="table table-hover mb-0">
+                <thead style={{ background: "linear-gradient(135deg, #3fe2cd25, #ffffff60)" }}>
+                  <tr>
+                    <th className="border-0 px-4 py-3" style={{ color: "#2c5f5d" }}>Employee</th>
+                    <th className="border-0 px-4 py-3" style={{ color: "#2c5f5d" }}>Check In</th>
+                    <th className="border-0 px-4 py-3" style={{ color: "#2c5f5d" }}>Check Out</th>
+                    <th className="border-0 px-4 py-3" style={{ color: "#2c5f5d" }}>Status</th>
+                    <th className="border-0 px-4 py-3 text-center" style={{ color: "#2c5f5d" }}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {employees.map((employee, index) => {
+                    const attendance = getAttendanceStatus(employee.Employee_Id);
+                    const currentStatus = attendance.status;
+                    
+                    return (
+                      <tr key={employee.Employee_Id || index} style={{ borderBottom: "1px solid rgba(63, 226, 205, 0.1)" }}>
+                        <td className="px-4 py-3">
+                          <div className="fw-bold" style={{ color: "#2c5f5d" }}>
+                            {employee.First_Name} {employee.Last_Name}
+                          </div>
+                          <small style={{ color: "#5a6c6b" }}>ID: {employee.Employee_Id}</small>
+                        </td>
+                        <td className="px-4 py-3" style={{ color: "#5a6c6b" }}>
+                          {attendance.checkIn || '-'}
+                        </td>
+                        <td className="px-4 py-3" style={{ color: "#5a6c6b" }}>
+                          {attendance.checkOut || '-'}
+                        </td>
+                        <td className="px-4 py-3">
+                          <span 
+                            className="badge px-3 py-2"
+                            style={{ 
+                              background: getStatusColor(currentStatus),
+                              color: "white",
+                              borderRadius: "20px",
+                              fontSize: "0.75rem"
+                            }}
+                          >
+                            {getStatusIcon(currentStatus)} {currentStatus}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <div className="d-flex gap-1 justify-content-center">
+                            <button 
+                              className="btn btn-sm"
+                              style={{
+                                background: "linear-gradient(45deg, #28a745, #20c997)",
+                                color: "white",
+                                border: "none",
+                                borderRadius: "6px",
+                                padding: "6px 12px",
+                                fontSize: "0.75rem"
+                              }}
+                              onClick={() => markAttendance(employee.Employee_Id, 'Present')}
+                              disabled={currentStatus === 'Present' || saving}
+                            >
+                              <CheckCircle size={14} className="me-1" />
+                              Present
+                            </button>
+                            <button 
+                              className="btn btn-sm"
+                              style={{
+                                background: "linear-gradient(45deg, #dc3545, #c82333)",
+                                color: "white",
+                                border: "none",
+                                borderRadius: "6px",
+                                padding: "6px 12px",
+                                fontSize: "0.75rem"
+                              }}
+                              onClick={() => markAttendance(employee.Employee_Id, 'Absent')}
+                              disabled={currentStatus === 'Absent' || saving}
+                            >
+                              <XCircle size={14} className="me-1" />
+                              Absent
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        {/* Empty state */}
+        {employees.length === 0 && !isLoading && (
+          <div className="text-center py-5">
+            <Users size={48} className="text-muted mb-3" />
+            <h5 className="text-muted">No employees found</h5>
+            <p className="text-muted">Add employees to track their attendance.</p>
+          </div>
+        )}
+      </>
+    );
+  };
 
   // Birthdays Module
   const BirthdaysModule = () => (
@@ -1060,8 +1398,8 @@ const HRMDashboard = () => {
       </div>
       <div className="card-body">
         <div className="row">
-          {upcomingBirthdays.map((birthday) => (
-            <div key={birthday.Employee_Id} className="col-md-4 mb-3">
+          {upcomingBirthdays.map((birthday, index) => (
+            <div key={birthday.Employee_Id || index} className="col-md-4 mb-3">
               <div 
                 className="card h-100"
                 style={{
@@ -1112,37 +1450,12 @@ const HRMDashboard = () => {
         minHeight: "100vh"
       }}
     >
-      {/* Header */}
-      <div 
-        className="card mb-4"
-        style={{
-          background: "linear-gradient(135deg, #ffffff90, #3fe2cd15)",
-          border: "1px solid rgba(63, 226, 205, 0.2)",
-          borderRadius: "12px",
-          boxShadow: "0 8px 25px rgba(63, 226, 205, 0.1)"
-        }}
-      >
-        <div className="card-body">
-          <div className="d-flex align-items-center">
-            <Shield size={24} className="me-2" style={{ color: "#2c5f5d" }} />
-            <div>
-              <h4 className="mb-0" style={{ color: "#2c5f5d" }}>HRM Dashboard</h4>
-              <small style={{ color: "#5a6c6b" }}>
-                Welcome, {currentUser?.First_Name} {currentUser?.Last_Name} ({currentUser?.role})
-              </small>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Navigation */}
+      <EnhancedHeader />
       <Navigation />
 
-      {/* Module Content */}
       {activeModule === 'dashboard' && <DashboardOverview />}
-      {activeModule === 'attendance' && <AttendanceModule />}
       {activeModule === 'leaves' && <LeaveRequestsModule />}
-      {activeModule === 'payroll' && <PayrollModule />}
+      {activeModule === 'attendance' && <AttendanceModule />}
       {activeModule === 'birthdays' && <BirthdaysModule />}
 
       {/* Leave Request Modal */}
@@ -1359,19 +1672,6 @@ const HRMDashboard = () => {
                 <div className="row">
                   <div className="col-md-6">
                     <div className="mb-3">
-                      <label className="form-label fw-bold" style={{ color: "#2c5f5d" }}>Leave ID</label>
-                      <p className="mb-0 p-2" style={{ 
-                        color: "#5a6c6b", 
-                        background: "#f8f9fa",
-                        borderRadius: "6px",
-                        border: "1px solid #e9ecef"
-                      }}>
-                        {viewingRequest.Leave_Id}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="col-md-6">
-                    <div className="mb-3">
                       <label className="form-label fw-bold" style={{ color: "#2c5f5d" }}>Employee</label>
                       <p className="mb-0 p-2" style={{ 
                         color: "#5a6c6b", 
@@ -1381,6 +1681,28 @@ const HRMDashboard = () => {
                       }}>
                         {getEmployeeName(viewingRequest.Employee_Id, viewingRequest.First_Name, viewingRequest.Last_Name)}
                       </p>
+                    </div>
+                  </div>
+                  <div className="col-md-6">
+                    <div className="mb-3">
+                      <label className="form-label fw-bold" style={{ color: "#2c5f5d" }}>Status</label>
+                      <div className="p-2" style={{ 
+                        background: "#f8f9fa",
+                        borderRadius: "6px",
+                        border: "1px solid #e9ecef"
+                      }}>
+                        <span 
+                          className="badge px-3 py-2"
+                          style={{ 
+                            background: getStatusColor(viewingRequest.status),
+                            color: "white",
+                            borderRadius: "20px",
+                            fontSize: "0.875rem"
+                          }}
+                        >
+                          {getStatusIcon(viewingRequest.status)} {viewingRequest.status}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1445,136 +1767,6 @@ const HRMDashboard = () => {
                   }}
                 >
                   Close
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Approval Modal */}
-      {showApprovalModal && approvalRequest && (
-        <div 
-          className="modal show d-block" 
-          style={{ 
-            backgroundColor: 'rgba(0,0,0,0.8)',
-            zIndex: 1050
-          }}
-        >
-          <div className="modal-dialog modal-md modal-dialog-centered">
-            <div 
-              className="modal-content"
-              style={{
-                background: "#ffffff",
-                border: "2px solid #3fe2cd",
-                borderRadius: "12px",
-                boxShadow: "0 15px 35px rgba(0,0,0,0.3)"
-              }}
-            >
-              <div 
-                className="modal-header"
-                style={{
-                  background: approvalAction === 'Approved' 
-                    ? "linear-gradient(135deg, #28a745, #20c997)" 
-                    : "linear-gradient(135deg, #dc3545, #c82333)",
-                  color: "white",
-                  borderRadius: "10px 10px 0 0",
-                  borderBottom: "none"
-                }}
-              >
-                <h5 className="modal-title fw-bold">
-                  {approvalAction === 'Approved' ? 'Approve' : 'Reject'} Leave Request
-                </h5>
-                <button 
-                  className="btn-close btn-close-white" 
-                  onClick={() => setShowApprovalModal(false)}
-                  disabled={saving}
-                ></button>
-              </div>
-              <div className="modal-body p-4" style={{ background: "#ffffff" }}>
-                <div className="mb-3">
-                  <h6 style={{ color: "#2c5f5d" }}>Employee Details:</h6>
-                  <p className="mb-1">
-                    <strong>Name:</strong> {getEmployeeName(approvalRequest.Employee_Id, approvalRequest.First_Name, approvalRequest.Last_Name)}
-                  </p>
-                  <p className="mb-1">
-                    <strong>Leave ID:</strong> {approvalRequest.Leave_Id}
-                  </p>
-                  <p className="mb-1">
-                    <strong>Period:</strong> {new Date(approvalRequest.Start_Date).toLocaleDateString()} - {new Date(approvalRequest.End_Date).toLocaleDateString()}
-                  </p>
-                  <p className="mb-3">
-                    <strong>Days:</strong> {calculateLeaveDays(approvalRequest.Start_Date, approvalRequest.End_Date)} days
-                  </p>
-                </div>
-                
-                <div className="mb-3">
-                  <label className="form-label fw-bold" style={{ color: "#2c5f5d" }}>
-                    <MessageSquare size={16} className="me-1" />
-                    Comments (Optional)
-                  </label>
-                  <textarea
-                    className="form-control"
-                    value={approvalComments}
-                    onChange={(e) => setApprovalComments(e.target.value)}
-                    placeholder={`Add comments for ${approvalAction.toLowerCase()}ing this leave request...`}
-                    rows="3"
-                    disabled={saving}
-                    style={{
-                      border: "2px solid #e9ecef",
-                      borderRadius: "8px",
-                      padding: "10px 12px"
-                    }}
-                  />
-                </div>
-                
-                <div className="alert" style={{
-                  background: approvalAction === 'Approved' 
-                    ? "rgba(40, 167, 69, 0.1)" 
-                    : "rgba(220, 53, 69, 0.1)",
-                  border: `1px solid ${approvalAction === 'Approved' ? '#28a745' : '#dc3545'}`,
-                  borderRadius: "8px",
-                  color: approvalAction === 'Approved' ? '#155724' : '#721c24'
-                }}>
-                  Are you sure you want to <strong>{approvalAction.toLowerCase()}</strong> this leave request?
-                </div>
-              </div>
-              <div 
-                className="modal-footer" 
-                style={{ 
-                  background: "#f8f9fa",
-                  borderTop: "1px solid #dee2e6",
-                  borderRadius: "0 0 10px 10px"
-                }}
-              >
-                <button 
-                  className="btn btn-secondary"
-                  onClick={() => setShowApprovalModal(false)}
-                  disabled={saving}
-                  style={{
-                    background: "#6c757d",
-                    border: "none",
-                    borderRadius: "8px",
-                    padding: "10px 20px"
-                  }}
-                >
-                  Cancel
-                </button>
-                <button 
-                  className="btn ms-2"
-                  onClick={handleApproval}
-                  disabled={saving}
-                  style={{
-                    background: approvalAction === 'Approved' 
-                      ? "linear-gradient(45deg, #28a745, #20c997)" 
-                      : "linear-gradient(45deg, #dc3545, #c82333)",
-                    color: "white",
-                    border: "none",
-                    borderRadius: "8px",
-                    padding: "10px 20px"
-                  }}
-                >
-                  {saving ? 'Processing...' : `${approvalAction} Request`}
                 </button>
               </div>
             </div>

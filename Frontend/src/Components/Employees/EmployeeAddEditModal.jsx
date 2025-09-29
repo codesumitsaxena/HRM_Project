@@ -447,7 +447,6 @@ const EmployeeAddEditModal = ({
   const validateStep2 = () => {
     const errors = {};
     
-    if (!step2Data.Employee_Id) errors.Employee_Id = 'Employee ID is required';
     if (!step2Data.First_Name) errors.First_Name = 'First Name is required';
     if (!step2Data.Last_Name) errors.Last_Name = 'Last Name is required';
     if (!step2Data.Email) errors.Email = 'Email is required';
@@ -885,7 +884,7 @@ const EmployeeAddEditModal = ({
                             name="Employee_Id"
                             value={step2Data.Employee_Id}
                             onChange={handleStep2Change}
-                            placeholder="Enter Employee ID"
+                            placeholder="autoIncrement Employee ID"
                             disabled={saving}
                           />
                           {step2Errors.Employee_Id && (

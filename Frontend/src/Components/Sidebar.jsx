@@ -128,7 +128,7 @@ const Dashboard = () => {
         hasSubmenu: true,
         submenu: [
           { id: 'HRdashboard', title: 'HR Dashboard', path: '/hr-dashboard', component: 'HRDashboard' },
-          { id: 'managerDashboard', title: 'Manager Dashboard', path: '/manager-dashboard', component: 'ManagerDashboard' },
+          // { id: 'managerDashboard', title: 'Manager Dashboard', path: '/manager-dashboard', component: 'ManagerDashboard' },
           { id: 'employee-dashboard', title: 'Employee Dashboard', path: '/employee-dashboard', component: 'EmployeeDashboard' }
         ]
       },
@@ -142,24 +142,24 @@ const Dashboard = () => {
         hasSubmenu: true,
         submenu: [
           { id: 'all-employees', title: 'All Employees', path: '/employees', component: 'EmployeeTable' },
-          { id: 'employee-profiles', title: 'Employee Profiles', path: '/employees/profiles', component: 'EmployeeTable' },
+          // { id: 'employee-profiles', title: 'Employee Profiles', path: '/employees/profiles', component: 'EmployeeTable' },
           { id: 'departments', title: 'Departments', path: '/Department', component: 'DepartmentTable' },
-          { id: 'employee-profile', title: 'Individual Profile View', path: '/employee-profile', component: 'EmployeeProfile' }
+          // { id: 'employee-profile', title: 'Individual Profile View', path: '/employee-profile', component: 'EmployeeProfile' }
         ]
       },
       
       // Recruitment (Admin + HR level access)
-      {
-        id: 'recruitment',
-        title: 'Recruitment',
-        icon: UserPlus,
-        hasSubmenu: true,
-        submenu: [
-          { id: 'job-postings', title: 'Job Postings', path: '/recruitment/jobs', component: 'JobPostings' },
-          { id: 'applications', title: 'Applications', path: '/recruitment/applications', component: 'Applications' },
-          { id: 'interviews', title: 'Interviews', path: '/recruitment/interviews', component: 'Interviews' }
-        ]
-      },
+      // {
+      //   id: 'recruitment',
+      //   title: 'Recruitment',
+      //   icon: UserPlus,
+      //   hasSubmenu: true,
+      //   submenu: [
+      //     { id: 'job-postings', title: 'Job Postings', path: '/recruitment/jobs', component: 'JobPostings' },
+      //     { id: 'applications', title: 'Applications', path: '/recruitment/applications', component: 'Applications' },
+      //     { id: 'interviews', title: 'Interviews', path: '/recruitment/interviews', component: 'Interviews' }
+      //   ]
+      // },
       
       // Attendance & Leave Management (All levels)
       {
@@ -174,7 +174,7 @@ const Dashboard = () => {
           { id: 'hr-leave-requests', title: 'HR Leave Requests', path: '/hr-leave-requests', component: 'HRleaveRequest' },
           { id: 'leave-request', title: 'Employee Leave Request', path: '/attendance/leave-request', component: 'LeaveRequest' },
           { id: 'employee-attendance', title: 'Employee Attendance History', path: '/employee-attendance', component: 'AttendanceTable' },
-          { id: 'overtime', title: 'Overtime Tracking', path: '/attendance/overtime', component: 'OvertimeTracking' }
+          
         ]
       },
       
@@ -219,7 +219,13 @@ const Dashboard = () => {
           { id: 'analytics', title: 'HR Analytics', path: '/reports/analytics', component: 'HRAnalytics' }
         ]
       },
-      
+      {
+        id: 'employee-profile',
+        title: 'My Profile',
+        icon: UserCircle,
+        path: '/employee-profile',
+        component: 'EmployeeProfile'
+      },
       // System Settings (Admin only)
       {
         id: 'settings',
@@ -244,16 +250,16 @@ const Dashboard = () => {
       },
       
       // HR can access employee role dashboard
-      {
-        id: 'role-access',
-        title: 'Role Access',
-        icon: Shield,
-        hasSubmenu: true,
-        submenu: [
-          { id: 'employee-dashboard', title: 'Employee Dashboard', path: '/employee-dashboard', component: 'EmployeeDashboard' },
-          { id: 'managerDashboard', title: 'Manager Dashboard', path: '/manager-dashboard', component: 'ManagerDashboard' }
-        ]
-      },
+      // {
+      //   id: 'role-access',
+      //   title: 'Role Access',
+      //   icon: Shield,
+      //   hasSubmenu: true,
+      //   submenu: [
+      //     { id: 'employee-dashboard', title: 'Employee Dashboard', path: '/employee-dashboard', component: 'EmployeeDashboard' },
+      //     { id: 'managerDashboard', title: 'Manager Dashboard', path: '/manager-dashboard', component: 'ManagerDashboard' }
+      //   ]
+      // },
       
       // Employee Management (HR level access)
       {
@@ -263,8 +269,8 @@ const Dashboard = () => {
         hasSubmenu: true,
         submenu: [
           { id: 'all-employees', title: 'All Employees', path: '/employees', component: 'EmployeeTable' },
-          { id: 'employee-profiles', title: 'Employee Profiles', path: '/employees/profiles', component: 'EmployeeTable' },
-          { id: 'employee-profile', title: 'Individual Profile View', path: '/employee-profile', component: 'EmployeeProfile' }
+          // { id: 'employee-profiles', title: 'Employee Profiles', path: '/employees/profiles', component: 'EmployeeTable' },
+          // { id: 'employee-profile', title: 'Individual Profile View', path: '/employee-profile', component: 'EmployeeProfile' }
         ]
       },
       
@@ -291,8 +297,7 @@ const Dashboard = () => {
           { id: 'daily-attendance', title: 'Daily Attendance', path: '/attendance/daily', component: 'DailyAttendance' },
           { id: 'hr-leave-requests', title: 'Leave Requests', path: '/hr-leave-requests', component: 'HRleaveRequest' },
           { id: 'employee-attendance', title: 'Employee Attendance History', path: '/employee-attendance', component: 'AttendanceTable' },
-          { id: 'leave-request', title: 'Employee Leave Request View', path: '/attendance/leave-request', component: 'LeaveRequest' }
-        ]
+                  ]
       },
       {
         id: 'employee-profile',
@@ -314,65 +319,65 @@ const Dashboard = () => {
         ]
       }
     ],
-    manager: [
-      // Manager Dashboard
-      {
-        id: 'managerDashboard',
-        title: 'Manager Dashboard',
-        icon: Home,
-        path: '/manager-dashboard',
-        component: 'ManagerDashboard'
-      },
+    // manager: [
+    //   // Manager Dashboard
+    //   {
+    //     id: 'managerDashboard',
+    //     title: 'Manager Dashboard',
+    //     icon: Home,
+    //     path: '/manager-dashboard',
+    //     component: 'ManagerDashboard'
+    //   },
       
-      // Manager can access employee dashboard
-      {
-        id: 'role-access',
-        title: 'Team Access',
-        icon: Shield,
-        hasSubmenu: true,
-        submenu: [
-          { id: 'employee-dashboard', title: 'Employee Dashboard', path: '/employee-dashboard', component: 'EmployeeDashboard' }
-        ]
-      },
+    //   // Manager can access employee dashboard
+    //   {
+    //     id: 'role-access',
+    //     title: 'Team Access',
+    //     icon: Shield,
+    //     hasSubmenu: true,
+    //     submenu: [
+    //       { id: 'employee-dashboard', title: 'Employee Dashboard', path: '/employee-dashboard', component: 'EmployeeDashboard' }
+    //     ]
+    //   },
       
-      // Team Management
-      {
-        id: 'team',
-        title: 'Team Management',
-        icon: Users,
-        hasSubmenu: true,
-        submenu: [
-          { id: 'team-members', title: 'Team Members', path: '/team/members', component: 'TeamMembers' },
-          { id: 'team-attendance', title: 'Team Attendance', path: '/team/attendance', component: 'TeamAttendance' },
-          { id: 'all-employees', title: 'View All Employees', path: '/employees', component: 'EmployeeTable' },
-          { id: 'employee-profile', title: 'Employee Profile View', path: '/employee-profile', component: 'EmployeeProfile' }
-        ]
-      },
+    //   // Team Management
+    //   {
+    //     id: 'team',
+    //     title: 'Team Management',
+    //     icon: Users,
+    //     hasSubmenu: true,
+    //     submenu: [
+    //       { id: 'team-members', title: 'Team Members', path: '/team/members', component: 'TeamMembers' },
+    //       { id: 'team-attendance', title: 'Team Attendance', path: '/team/attendance', component: 'TeamAttendance' },
+    //       { id: 'all-employees', title: 'View All Employees', path: '/employees', component: 'EmployeeTable' },
+    //       { id: 'employee-profile', title: 'Employee Profile View', path: '/employee-profile', component: 'EmployeeProfile' }
+    //     ]
+    //   },
       
-      // Performance Management
-      {
-        id: 'performance',
-        title: 'Performance Management',
-        icon: BarChart3,
-        hasSubmenu: true,
-        submenu: [
-          { id: 'team-performance', title: 'Team Performance', path: '/performance/team', component: 'TeamPerformance' },
-          { id: 'appraisals', title: 'Appraisals', path: '/performance/appraisals', component: 'Appraisals' }
-        ]
-      },
+    //   // Performance Management
+    //   {
+    //     id: 'performance',
+    //     title: 'Performance Management',
+    //     icon: BarChart3,
+    //     hasSubmenu: true,
+    //     submenu: [
+    //       { id: 'team-performance', title: 'Team Performance', path: '/performance/team', component: 'TeamPerformance' },
+    //       { id: 'appraisals', title: 'Appraisals', path: '/performance/appraisals', component: 'Appraisals' }
+    //     ]
+    //   },
       
-      // Leave Management
-      {
-        id: 'leave-management',
-        title: 'Leave Management',
-        icon: Clock,
-        hasSubmenu: true,
-        submenu: [
-          { id: 'team-leave-requests', title: 'Team Leave Requests', path: '/manager/leave-requests', component: 'ManagerLeaveRequests' },
-          { id: 'employee-attendance', title: 'Employee Attendance', path: '/employee-attendance', component: 'AttendanceTable' }
-        ]
-      }
-    ],
+    //   // Leave Management
+    //   {
+    //     id: 'leave-management',
+    //     title: 'Leave Management',
+    //     icon: Clock,
+    //     hasSubmenu: true,
+    //     submenu: [
+    //       { id: 'team-leave-requests', title: 'Team Leave Requests', path: '/manager/leave-requests', component: 'ManagerLeaveRequests' },
+    //       { id: 'employee-attendance', title: 'Employee Attendance', path: '/employee-attendance', component: 'AttendanceTable' }
+    //     ]
+    //   }
+    // ],
     employee: [
       {
         id: 'employee-dashboard',

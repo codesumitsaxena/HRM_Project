@@ -5,15 +5,19 @@ import {
   XCircle, User, FileText, CalendarDays, AlertCircle,
   Building2, Users
 } from 'lucide-react';
-import * as XLSX from "xlsx";
-import { saveAs } from "file-saver";
 
-const HRLeaveRequestTable = () => {
+const LeaveRequestTable = () => {
   const [leaveRequests, setLeaveRequests] = useState([]);
   const [employees, setEmployees] = useState([]);
+  const [currentUser, setCurrentUser] = useState(null);
   const [saving, setSaving] = useState(false);
   
+  // Get current user from localStorage
   useEffect(() => {
+    const savedUser = JSON.parse(localStorage.getItem("user"));
+    if (savedUser) {
+      setCurrentUser(savedUser);
+    }
     fetchLeaveRequests();
     fetchEmployees();
   }, []);
@@ -21,9 +25,7 @@ const HRLeaveRequestTable = () => {
   const fetchLeaveRequests = async () => {
     try {
       const token = localStorage.getItem("token");
-      console.log("Using token:", token);
-  
-      const response = await fetch("http://localhost:3000/leaves", {
+      const response = await fetch("http://localhost:3000/hr-leaves", {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
@@ -35,8 +37,6 @@ const HRLeaveRequestTable = () => {
       }
   
       const data = await response.json();
-      console.log("API Response:", data);
-  
       setLeaveRequests(Array.isArray(data) ? data : data.leaveRequests || []);
     } catch (err) {
       console.error("Error fetching leave requests:", err);
@@ -59,15 +59,12 @@ const HRLeaveRequestTable = () => {
       }
   
       const data = await response.json();
-      console.log("Employees API Response:", data);
-  
       setEmployees(Array.isArray(data) ? data : data.employees || []);
     } catch (err) {
       console.error("Error fetching employees:", err);
       setEmployees([]);
     }
   };
-  
 
   const [search, setSearch] = useState('');
   const [showModal, setShowModal] = useState(false);
@@ -76,28 +73,26 @@ const HRLeaveRequestTable = () => {
   const [viewingRequest, setViewingRequest] = useState(null);
   const [filterStatus, setFilterStatus] = useState('');
   const [filterEmployee, setFilterEmployee] = useState('');
+  const [filterLeaveType, setFilterLeaveType] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(8);
 
   const [formData, setFormData] = useState({
-    Leave_Id: '',
     First_Name: '',
     Last_Name: '',
     Employee_Id: '',
+    Leave_Type: 'Casual Leave',  // Changed from Leave_Type
     Start_Date: '',
     End_Date: '',
     Reason: '',
     status: 'Pending'
   });
-
-  const exportToExcel = () => {
-    const worksheet = XLSX.utils.json_to_sheet(leaveRequests);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Leave Requests");
-    const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
-    const fileData = new Blob([excelBuffer], { type: "application/octet-stream" });
-    saveAs(fileData, "leaveRequestsTable.xlsx");
-  };
+  // Leave types from database enum
+  const leaveTypes = [
+    { value: 'Casual Leave', label: 'Casual Leave', color: '#17a2b8' },
+    { value: 'Sick Leave', label: 'Sick Leave', color: '#dc3545' },
+    { value: 'Earned Leave', label: 'Earned Leave', color: '#28a745' }
+  ];
 
   const statusOptions = ['Pending', 'Approved', 'Rejected'];
 
@@ -123,11 +118,16 @@ const HRLeaveRequestTable = () => {
     }
   };
 
+  const getLeaveTypeColor = (leaveType) => {
+    const type = leaveTypes.find(t => t.value === leaveType);
+    return type ? type.color : '#17a2b8';
+  };
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
     
-    // If Employee_Id changes, update First_Name and Last_Name
+    // Auto-populate employee info if Employee_Id changes (for admin/HR users)
     if (name === 'Employee_Id') {
       const selectedEmployee = employees.find(emp => emp.Employee_Id == value);
       if (selectedEmployee) {
@@ -143,11 +143,15 @@ const HRLeaveRequestTable = () => {
 
   const openAddModal = () => {
     setEditingRequest(null);
+    
+    // Auto-populate current user's information
+    const userEmployee = employees.find(emp => emp.Employee_Id == currentUser?.employeeId || emp.Employee_Id == currentUser?.userId);
+    
     setFormData({
-      Leave_Id: '',
-      First_Name: '',
-      Last_Name: '',
-      Employee_Id: '',
+      First_Name: userEmployee?.First_Name || currentUser?.name?.split(' ')[0] || '',
+      Last_Name: userEmployee?.Last_Name || currentUser?.name?.split(' ')[1] || '',
+      Employee_Id: currentUser?.employeeId || currentUser?.userId || '',
+      Leave_Type: 'Casual Leave',
       Start_Date: '',
       End_Date: '',
       Reason: '',
@@ -170,21 +174,23 @@ const HRLeaveRequestTable = () => {
   const handleSave = async () => {
     setSaving(true);
     try {
-      // Format data properly
+      // Use current user's employee ID automatically
+      const employeeId = currentUser?.employeeId || currentUser?.userId;
+      
       const formattedData = {
         ...formData,
+        Employee_Id: employeeId, // Always use current user's ID
         Start_Date: formData.Start_Date
           ? new Date(formData.Start_Date).toISOString().split("T")[0]
           : null,
         End_Date: formData.End_Date
           ? new Date(formData.End_Date).toISOString().split("T")[0]
           : null,
-        Employee_Id: formData.Employee_Id ? parseInt(formData.Employee_Id) : null,
       };
   
       // Validation
-      if (!formattedData.Employee_Id) {
-        alert("Please select an employee");
+      if (!employeeId) {
+        alert("Employee ID not found. Please login again.");
         setSaving(false);
         return;
       }
@@ -200,17 +206,20 @@ const HRLeaveRequestTable = () => {
         setSaving(false);
         return;
       }
+
+      if (!formattedData.Leave_Type) {
+        alert("Please select a leave type");
+        setSaving(false);
+        return;
+      }
   
-      console.log("Sending data:", formattedData);
-  
-      // JWT token
       const token = localStorage.getItem("token");
   
       let response;
       if (editingRequest) {
         // Update leave request
         response = await fetch(
-          `http://localhost:3000/leaves/${editingRequest.Leave_Id}`,
+          `http://localhost:3000/hr-leaves/${editingRequest.Leave_Id}`,
           {
             method: "PUT",
             headers: {
@@ -221,8 +230,8 @@ const HRLeaveRequestTable = () => {
           }
         );
       } else {
-        // Add new leave request
-        response = await fetch("http://localhost:3000/leaves", {
+        // Add new leave request (Leave_Id will be auto-generated)
+        response = await fetch("http://localhost:3000/hr-leaves", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -236,7 +245,7 @@ const HRLeaveRequestTable = () => {
         alert(
           editingRequest
             ? "Leave request updated successfully!"
-            : "Leave request added successfully!"
+            : "Leave request submitted successfully!"
         );
         await fetchLeaveRequests();
         setShowModal(false);
@@ -253,7 +262,6 @@ const HRLeaveRequestTable = () => {
       setSaving(false);
     }
   };
-  
 
   const handleDelete = async (leaveId) => {
     if (!window.confirm("Are you sure you want to delete this leave request?")) {
@@ -262,13 +270,7 @@ const HRLeaveRequestTable = () => {
   
     try {
       const token = localStorage.getItem("token");
-  
-      if (!token) {
-        alert("You are not logged in.");
-        return;
-      }
-  
-      const response = await fetch(`http://localhost:3000/leaves/${leaveId}`, {
+      const response = await fetch(`http://localhost:3000/hr-leaves/${leaveId}`, {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
@@ -277,34 +279,17 @@ const HRLeaveRequestTable = () => {
       });
   
       if (response.ok) {
-        console.log("Leave request deleted successfully!");
         alert("Leave request deleted successfully!");
-        await fetchLeaveRequests(); // refresh table
+        await fetchLeaveRequests();
       } else {
-        const contentType = response.headers.get("content-type");
-        if (contentType && contentType.includes("application/json")) {
-          const errorData = await response.json();
-          console.error("Failed to delete leave request:", errorData);
-          alert(
-            `Failed to delete leave request: ${
-              errorData.message || "Unknown error"
-            }`
-          );
-        } else {
-          console.error(
-            "Failed to delete leave request. Server responded with a non-JSON error."
-          );
-          alert(
-            `Failed to delete leave request: ${response.status} ${response.statusText}`
-          );
-        }
+        const errorData = await response.json();
+        alert(`Failed to delete: ${errorData.message || "Unknown error"}`);
       }
     } catch (error) {
       console.error("Error deleting leave request:", error);
-      alert("Error deleting leave request. Please try again. Check server connection.");
+      alert("Error deleting leave request. Please try again.");
     }
   };
-  
 
   const getEmployeeName = (employeeId, firstName, lastName) => {
     if (firstName && lastName) {
@@ -323,13 +308,20 @@ const HRLeaveRequestTable = () => {
     return diffDays;
   };
 
+  // Check if current user can edit/delete a request
+  const canEditDelete = (request) => {
+    const userEmployeeId = currentUser?.employeeId || currentUser?.userId;
+    return request.Employee_Id == userEmployeeId && request.status === 'Pending';
+  };
+
   const filteredRequests = leaveRequests.filter(request => {
     const employeeName = getEmployeeName(request.Employee_Id, request.First_Name, request.Last_Name);
-    const searchText = `${employeeName} ${request.Leave_Id || ''} ${request.Reason || ''}`.toLowerCase();
+    const searchText = `${employeeName} ${request.Leave_Id || ''} ${request.Reason || ''} ${request.Leave_Type || ''}`.toLowerCase();
     const matchesSearch = searchText.includes(search.toLowerCase());
     const matchesStatus = filterStatus === '' || request.status === filterStatus;
     const matchesEmployee = filterEmployee === '' || request.Employee_Id == filterEmployee;
-    return matchesSearch && matchesStatus && matchesEmployee;
+    const matchesLeaveType = filterLeaveType === '' || request.Leave_Type === filterLeaveType;
+    return matchesSearch && matchesStatus && matchesEmployee && matchesLeaveType;
   });
 
   // Pagination
@@ -339,7 +331,7 @@ const HRLeaveRequestTable = () => {
 
   return (
     <div 
-      className="p-4"
+      className="p-2 p-md-4"
       style={{
         background: "linear-gradient(135deg, #3fe2cd08, #ffffff95, #3fe2cd12)",
         minHeight: "100vh"
@@ -347,7 +339,7 @@ const HRLeaveRequestTable = () => {
     >
       {/* Header */}
       <div 
-        className="card mb-4"
+        className="card mb-3 mb-md-4"
         style={{
           background: "linear-gradient(135deg, #ffffff90, #3fe2cd15)",
           border: "1px solid rgba(63, 226, 205, 0.2)",
@@ -355,17 +347,22 @@ const HRLeaveRequestTable = () => {
           boxShadow: "0 8px 25px rgba(63, 226, 205, 0.1)"
         }}
       >
-        <div className="card-body">
+        <div className="card-body p-3">
           <div className="row align-items-center">
-            <div className="col-md-6">
-              <div className="d-flex align-items-center mb-3 mb-md-0">
-                <Calendar size={24} className="me-2" style={{ color: "#2c5f5d" }} />
-                <h4 className="mb-0" style={{ color: "#2c5f5d" }}>Leave Request Management</h4>
+            <div className="col-12 col-md-8 mb-3 mb-md-0">
+              <div className="d-flex align-items-center">
+                <Calendar size={20} className="me-2 d-none d-md-inline" style={{ color: "#2c5f5d" }} />
+                <div>
+                  <h4 className="mb-0 fs-5 fs-md-4" style={{ color: "#2c5f5d" }}>My Leave Requests</h4>
+                  <small className="text-muted">
+                    Welcome, {currentUser?.name || 'User'}
+                  </small>
+                </div>
               </div>
             </div>
-            <div className="col-md-6 text-md-end">
+            <div className="col-12 col-md-4 text-start text-md-end">
               <button 
-                className="btn me-2"
+                className="btn w-100 w-md-auto"
                 style={{
                   background: "linear-gradient(45deg, #28a745, #20c997)",
                   color: "white",
@@ -377,19 +374,6 @@ const HRLeaveRequestTable = () => {
                 <Plus size={16} className="me-1" />
                 Add Leave Request
               </button>
-              <button 
-                className="btn me-2"
-                style={{
-                  background: "linear-gradient(45deg, #17a2b8, #20c997)",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "8px"
-                }}
-                onClick={exportToExcel} 
-              >
-                <Download size={16} className="me-1" />
-                Export
-              </button>
             </div>
           </div>
         </div>
@@ -397,22 +381,22 @@ const HRLeaveRequestTable = () => {
 
       {/* Filters */}
       <div 
-        className="card mb-4"
+        className="card mb-3 mb-md-4"
         style={{
           background: "linear-gradient(135deg, #ffffff90, #3fe2cd15)",
           border: "1px solid rgba(63, 226, 205, 0.2)",
           borderRadius: "12px"
         }}
       >
-        <div className="card-body">
-          <div className="row">
-            <div className="col-md-4 mb-3">
+        <div className="card-body p-3">
+          <div className="row g-2">
+            <div className="col-12 col-md-3">
               <div className="position-relative">
-                <Search size={16} className="position-absolute top-50 start-0 translate-middle-y ms-3" style={{ color: "#2c5f5d" }} />
+                <Search size={16} className="position-absolute top-50 start-0 translate-middle-y ms-3 text-muted" />
                 <input
                   type="text"
                   className="form-control ps-5"
-                  placeholder="Search leave requests..."
+                  placeholder="Search..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   style={{
@@ -423,7 +407,7 @@ const HRLeaveRequestTable = () => {
                 />
               </div>
             </div>
-            <div className="col-md-3 mb-3">
+            <div className="col-6 col-md-2">
               <select
                 className="form-select"
                 value={filterStatus}
@@ -440,7 +424,24 @@ const HRLeaveRequestTable = () => {
                 ))}
               </select>
             </div>
-            <div className="col-md-3 mb-3">
+            <div className="col-6 col-md-2">
+              <select
+                className="form-select"
+                value={filterLeaveType}
+                onChange={(e) => setFilterLeaveType(e.target.value)}
+                style={{
+                  background: "linear-gradient(to right, #ffffff80, #3fe2cd20)",
+                  border: "1px solid rgba(63, 226, 205, 0.3)",
+                  borderRadius: "8px"
+                }}
+              >
+                <option value="">All Types</option>
+                {leaveTypes.map(type => (
+                  <option key={type.value} value={type.value}>{type.label}</option>
+                ))}
+              </select>
+            </div>
+            <div className="col-6 col-md-3 d-none d-md-block">
               <select
                 className="form-select"
                 value={filterEmployee}
@@ -454,12 +455,12 @@ const HRLeaveRequestTable = () => {
                 <option value="">All Employees</option>
                 {employees.map(emp => (
                   <option key={emp.Employee_Id} value={emp.Employee_Id}>
-                    {emp.First_Name} {emp.Last_Name} ({emp.Employee_Id})
+                    {emp.First_Name} {emp.Last_Name}
                   </option>
                 ))}
               </select>
             </div>
-            <div className="col-md-2 mb-3">
+            <div className="col-6 col-md-2">
               <button 
                 className="btn w-100"
                 style={{
@@ -472,6 +473,7 @@ const HRLeaveRequestTable = () => {
                   setSearch('');
                   setFilterStatus('');
                   setFilterEmployee('');
+                  setFilterLeaveType('');
                   setCurrentPage(1);
                 }}
               >
@@ -482,7 +484,7 @@ const HRLeaveRequestTable = () => {
         </div>
       </div>
 
-      {/* Leave Request Cards for Mobile */}
+      {/* Mobile Cards */}
       <div className="d-md-none">
         {currentRequests.map((request) => (
           <div 
@@ -494,34 +496,55 @@ const HRLeaveRequestTable = () => {
               borderRadius: "12px"
             }}
           >
-            <div className="card-body">
+            <div className="card-body p-3">
               <div className="d-flex justify-content-between align-items-start mb-2">
-                <h6 className="mb-0" style={{ color: "#2c5f5d" }}>
-                  {getEmployeeName(request.Employee_Id, request.First_Name, request.Last_Name)}
-                </h6>
+                <div>
+                  <h6 className="mb-1 fw-bold" style={{ color: "#2c5f5d" }}>
+                    {getEmployeeName(request.Employee_Id, request.First_Name, request.Last_Name)}
+                  </h6>
+                  <span 
+                    className="badge px-2 py-1 me-2"
+                    style={{ 
+                      background: getLeaveTypeColor(request.Leave_Type),
+                      color: "white",
+                      borderRadius: "12px",
+                      fontSize: "0.7rem"
+                    }}
+                  >
+                    {request.Leave_Type}
+                  </span>
+                </div>
                 <span 
-                  className="badge"
+                  className="badge px-2 py-1"
                   style={{ 
                     background: getStatusColor(request.status),
                     color: "white",
-                    borderRadius: "20px"
+                    borderRadius: "20px",
+                    fontSize: "0.7rem"
                   }}
                 >
                   {getStatusIcon(request.status)} {request.status}
                 </span>
               </div>
-              <p className="small mb-1" style={{ color: "#5a6c6b" }}>
-                <CalendarDays size={14} className="me-1" />
-                {new Date(request.Start_Date).toLocaleDateString()} - {new Date(request.End_Date).toLocaleDateString()}
-              </p>
-              <p className="small mb-1" style={{ color: "#5a6c6b" }}>
-                <Clock size={14} className="me-1" />
-                {calculateLeaveDays(request.Start_Date, request.End_Date)} days
-              </p>
-              <p className="small mb-3" style={{ color: "#5a6c6b" }}>
-                <FileText size={14} className="me-1" />
-                {request.Reason ? (request.Reason.length > 30 ? request.Reason.substring(0, 30) + '...' : request.Reason) : 'N/A'}
-              </p>
+              
+              <div className="mb-2">
+                <small className="text-muted d-block">
+                  <CalendarDays size={12} className="me-1" />
+                  {new Date(request.Start_Date).toLocaleDateString()} - {new Date(request.End_Date).toLocaleDateString()}
+                </small>
+                <small className="text-muted d-block">
+                  <Clock size={12} className="me-1" />
+                  {calculateLeaveDays(request.Start_Date, request.End_Date)} days
+                </small>
+              </div>
+
+              {request.Reason && (
+                <p className="small mb-3 text-muted">
+                  <FileText size={12} className="me-1" />
+                  {request.Reason.length > 50 ? request.Reason.substring(0, 50) + '...' : request.Reason}
+                </p>
+              )}
+
               <div className="d-flex gap-2">
                 <button 
                   className="btn btn-sm flex-fill"
@@ -535,30 +558,34 @@ const HRLeaveRequestTable = () => {
                 >
                   <Eye size={14} />
                 </button>
-                <button 
-                  className="btn btn-sm flex-fill"
-                  style={{
-                    background: "linear-gradient(45deg, #ffc107, #fd7e14)",
-                    color: "white",
-                    border: "none",
-                    borderRadius: "6px"
-                  }}
-                  onClick={() => openEditModal(request)}
-                >
-                  <Edit3 size={14} />
-                </button>
-                <button 
-                  className="btn btn-sm flex-fill"
-                  style={{
-                    background: "linear-gradient(45deg, #dc3545, #c82333)",
-                    color: "white",
-                    border: "none",
-                    borderRadius: "6px"
-                  }}
-                  onClick={() => handleDelete(request.Leave_Id)}
-                >
-                  <Trash2 size={14} />
-                </button>
+                {canEditDelete(request) && (
+                  <>
+                    <button 
+                      className="btn btn-sm flex-fill"
+                      style={{
+                        background: "linear-gradient(45deg, #ffc107, #fd7e14)",
+                        color: "white",
+                        border: "none",
+                        borderRadius: "6px"
+                      }}
+                      onClick={() => openEditModal(request)}
+                    >
+                      <Edit3 size={14} />
+                    </button>
+                    <button 
+                      className="btn btn-sm flex-fill"
+                      style={{
+                        background: "linear-gradient(45deg, #dc3545, #c82333)",
+                        color: "white",
+                        border: "none",
+                        borderRadius: "6px"
+                      }}
+                      onClick={() => handleDelete(request.Leave_Id)}
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -580,11 +607,10 @@ const HRLeaveRequestTable = () => {
               <table className="table table-hover mb-0">
                 <thead style={{ background: "linear-gradient(135deg, #3fe2cd25, #ffffff60)" }}>
                   <tr>
-                    <th className="border-0 px-4 py-3" style={{ color: "#2c5f5d" }}>Leave ID</th>
                     <th className="border-0 px-4 py-3" style={{ color: "#2c5f5d" }}>Employee</th>
-                    <th className="border-0 px-4 py-3" style={{ color: "#2c5f5d" }}>Leave Period</th>
+                    <th className="border-0 px-4 py-3" style={{ color: "#2c5f5d" }}>Leave Type</th>
+                    <th className="border-0 px-4 py-3" style={{ color: "#2c5f5d" }}>Period</th>
                     <th className="border-0 px-4 py-3" style={{ color: "#2c5f5d" }}>Days</th>
-                    <th className="border-0 px-4 py-3" style={{ color: "#2c5f5d" }}>Reason</th>
                     <th className="border-0 px-4 py-3" style={{ color: "#2c5f5d" }}>Status</th>
                     <th className="border-0 px-4 py-3 text-center" style={{ color: "#2c5f5d" }}>Actions</th>
                   </tr>
@@ -592,26 +618,33 @@ const HRLeaveRequestTable = () => {
                 <tbody>
                   {currentRequests.map((request) => (
                     <tr key={request.Leave_Id} style={{ borderBottom: "1px solid rgba(63, 226, 205, 0.1)" }}>
-                      <td className="px-4 py-3" style={{ color: "#2c5f5d" }}>{request.Leave_Id}</td>
                       <td className="px-4 py-3">
-                        <div>
-                          <div className="fw-bold" style={{ color: "#2c5f5d" }}>
-                            {getEmployeeName(request.Employee_Id, request.First_Name, request.Last_Name)}
-                          </div>
-                          <small style={{ color: "#5a6c6b" }}>ID: {request.Employee_Id}</small>
+                        <div className="fw-bold" style={{ color: "#2c5f5d" }}>
+                          {getEmployeeName(request.Employee_Id, request.First_Name, request.Last_Name)}
                         </div>
+                        <small className="text-muted">ID: {request.Employee_Id}</small>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span 
+                          className="badge px-3 py-2"
+                          style={{ 
+                            background: getLeaveTypeColor(request.Leave_Type),
+                            color: "white",
+                            borderRadius: "20px",
+                            fontSize: "0.75rem"
+                          }}
+                        >
+                          {request.Leave_Type}
+                        </span>
                       </td>
                       <td className="px-4 py-3">
                         <div style={{ color: "#5a6c6b", fontSize: "0.875rem" }}>
-                          <div className="mb-1">From: {new Date(request.Start_Date).toLocaleDateString()}</div>
-                          <div>To: {new Date(request.End_Date).toLocaleDateString()}</div>
+                          <div>{new Date(request.Start_Date).toLocaleDateString()}</div>
+                          <div>to {new Date(request.End_Date).toLocaleDateString()}</div>
                         </div>
                       </td>
                       <td className="px-4 py-3" style={{ color: "#2c5f5d" }}>
-                        {calculateLeaveDays(request.Start_Date, request.End_Date)} days
-                      </td>
-                      <td className="px-4 py-3" style={{ color: "#5a6c6b" }}>
-                        {request.Reason ? (request.Reason.length > 30 ? request.Reason.substring(0, 30) + '...' : request.Reason) : 'N/A'}
+                        <span className="fw-bold">{calculateLeaveDays(request.Start_Date, request.End_Date)}</span> days
                       </td>
                       <td className="px-4 py-3">
                         <span 
@@ -642,34 +675,38 @@ const HRLeaveRequestTable = () => {
                           >
                             <Eye size={14} />
                           </button>
-                          <button 
-                            className="btn btn-sm"
-                            style={{
-                              background: "linear-gradient(45deg, #ffc107, #fd7e14)",
-                              color: "white",
-                              border: "none",
-                              borderRadius: "6px",
-                              width: "32px",
-                              height: "32px"
-                            }}
-                            onClick={() => openEditModal(request)}
-                          >
-                            <Edit3 size={14} />
-                          </button>
-                          <button 
-                            className="btn btn-sm"
-                            style={{
-                              background: "linear-gradient(45deg, #dc3545, #c82333)",
-                              color: "white",
-                              border: "none",
-                              borderRadius: "6px",
-                              width: "32px",
-                              height: "32px"
-                            }}
-                            onClick={() => handleDelete(request.Leave_Id)}
-                          >
-                            <Trash2 size={14} />
-                          </button>
+                          {canEditDelete(request) && (
+                            <>
+                              <button 
+                                className="btn btn-sm"
+                                style={{
+                                  background: "linear-gradient(45deg, #ffc107, #fd7e14)",
+                                  color: "white",
+                                  border: "none",
+                                  borderRadius: "6px",
+                                  width: "32px",
+                                  height: "32px"
+                                }}
+                                onClick={() => openEditModal(request)}
+                              >
+                                <Edit3 size={14} />
+                              </button>
+                              <button 
+                                className="btn btn-sm"
+                                style={{
+                                  background: "linear-gradient(45deg, #dc3545, #c82333)",
+                                  color: "white",
+                                  border: "none",
+                                  borderRadius: "6px",
+                                  width: "32px",
+                                  height: "32px"
+                                }}
+                                onClick={() => handleDelete(request.Leave_Id)}
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -685,7 +722,7 @@ const HRLeaveRequestTable = () => {
       {totalPages > 1 && (
         <div className="d-flex justify-content-center mt-4">
           <nav>
-            <ul className="pagination">
+            <ul className="pagination pagination-sm">
               <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
                 <button 
                   className="page-link"
@@ -697,26 +734,39 @@ const HRLeaveRequestTable = () => {
                     borderRadius: "6px 0 0 6px"
                   }}
                 >
-                  Previous
+                  Prev
                 </button>
               </li>
-              {[...Array(totalPages)].map((_, index) => (
-                <li key={index} className={`page-item ${currentPage === index + 1 ? 'active' : ''}`}>
-                  <button 
-                    className="page-link"
-                    onClick={() => setCurrentPage(index + 1)}
-                    style={{
-                      background: currentPage === index + 1 
-                        ? "linear-gradient(45deg, #3fe2cd, #2c5f5d)" 
-                        : "white",
-                      color: currentPage === index + 1 ? "white" : "#2c5f5d",
-                      border: "1px solid rgba(63, 226, 205, 0.3)"
-                    }}
-                  >
-                    {index + 1}
-                  </button>
-                </li>
-              ))}
+              {[...Array(Math.min(5, totalPages))].map((_, index) => {
+                let pageNum;
+                if (totalPages <= 5) {
+                  pageNum = index + 1;
+                } else if (currentPage <= 3) {
+                  pageNum = index + 1;
+                } else if (currentPage >= totalPages - 2) {
+                  pageNum = totalPages - 4 + index;
+                } else {
+                  pageNum = currentPage - 2 + index;
+                }
+                
+                return (
+                  <li key={pageNum} className={`page-item ${currentPage === pageNum ? 'active' : ''}`}>
+                    <button 
+                      className="page-link"
+                      onClick={() => setCurrentPage(pageNum)}
+                      style={{
+                        background: currentPage === pageNum 
+                          ? "linear-gradient(45deg, #3fe2cd, #2c5f5d)" 
+                          : "white",
+                        color: currentPage === pageNum ? "white" : "#2c5f5d",
+                        border: "1px solid rgba(63, 226, 205, 0.3)"
+                      }}
+                    >
+                      {pageNum}
+                    </button>
+                  </li>
+                );
+              })}
               <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
                 <button 
                   className="page-link"
@@ -765,7 +815,7 @@ const HRLeaveRequestTable = () => {
                 }}
               >
                 <h5 className="modal-title fw-bold">
-                  {editingRequest ? 'Edit Leave Request' : 'Add New Leave Request'}
+                  {editingRequest ? 'Edit Leave Request' : 'New Leave Request'}
                 </h5>
                 <button 
                   className="btn-close btn-close-white" 
@@ -774,39 +824,40 @@ const HRLeaveRequestTable = () => {
                 ></button>
               </div>
               <div className="modal-body p-4" style={{ background: "#ffffff" }}>
-                <div className="row">
+                
+                {/* Employee Info (Read-only for logged-in user) */}
+                <div className="row mb-3">
                   <div className="col-md-6">
                     <div className="mb-3">
                       <label className="form-label fw-bold" style={{ color: "#2c5f5d" }}>
-                        <AlertCircle size={16} className="me-1" />
-                        Leave ID
+                        <Users size={16} className="me-1" />
+                        Employee
                       </label>
                       <input
                         type="text"
                         className="form-control"
-                        name="Leave_Id"
-                        value={formData.Leave_Id}
-                        onChange={handleChange}
-                        placeholder="Auto-generated if empty"
-                        disabled={saving}
+                        value={`${formData.First_Name} ${formData.Last_Name} (${formData.Employee_Id})`}
+                        readOnly
                         style={{
                           border: "2px solid #e9ecef",
                           borderRadius: "8px",
-                          padding: "10px 12px"
+                          padding: "10px 12px",
+                          background: "#f8f9fa"
                         }}
                       />
+                      <small className="text-muted">Your employee information</small>
                     </div>
                   </div>
                   <div className="col-md-6">
                     <div className="mb-3">
                       <label className="form-label fw-bold" style={{ color: "#2c5f5d" }}>
-                        <Users size={16} className="me-1" />
-                        Employee *
+                        <Calendar size={16} className="me-1" />
+                        Leave Type *
                       </label>
                       <select
                         className="form-select"
-                        name="Employee_Id"
-                        value={formData.Employee_Id}
+                        name="Leave_Type"
+                        value={formData.Leave_Type}
                         onChange={handleChange}
                         required
                         disabled={saving}
@@ -816,63 +867,18 @@ const HRLeaveRequestTable = () => {
                           padding: "10px 12px"
                         }}
                       >
-                        <option value="">Select Employee</option>
-                        {employees.map(emp => (
-                          <option key={emp.Employee_Id} value={emp.Employee_Id}>
-                            {emp.First_Name} {emp.Last_Name} ({emp.Employee_Id})
+                        {leaveTypes.map(type => (
+                          <option key={type.value} value={type.value}>
+                            {type.label}
                           </option>
                         ))}
                       </select>
                     </div>
                   </div>
                 </div>
-                <div className="row">
-                  <div className="col-md-6">
-                    <div className="mb-3">
-                      <label className="form-label fw-bold" style={{ color: "#2c5f5d" }}>
-                        <User size={16} className="me-1" />
-                        First Name
-                      </label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        name="First_Name"
-                        value={formData.First_Name}
-                        onChange={handleChange}
-                        placeholder="First Name (auto-filled)"
-                        disabled={saving}
-                        style={{
-                          border: "2px solid #e9ecef",
-                          borderRadius: "8px",
-                          padding: "10px 12px"
-                        }}
-                      />
-                    </div>
-                  </div>
-                  <div className="col-md-6">
-                    <div className="mb-3">
-                      <label className="form-label fw-bold" style={{ color: "#2c5f5d" }}>
-                        <User size={16} className="me-1" />
-                        Last Name
-                      </label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        name="Last_Name"
-                        value={formData.Last_Name}
-                        onChange={handleChange}
-                        placeholder="Last Name (auto-filled)"
-                        disabled={saving}
-                        style={{
-                          border: "2px solid #e9ecef",
-                          borderRadius: "8px",
-                          padding: "10px 12px"
-                        }}
-                      />
-                    </div>
-                  </div>
-                </div>
-                <div className="row">
+
+                {/* Date Selection */}
+                <div className="row mb-3">
                   <div className="col-md-6">
                     <div className="mb-3">
                       <label className="form-label fw-bold" style={{ color: "#2c5f5d" }}>
@@ -886,6 +892,7 @@ const HRLeaveRequestTable = () => {
                         value={formData.Start_Date}
                         onChange={handleChange}
                         required
+                        min={new Date().toISOString().split('T')[0]}
                         disabled={saving}
                         style={{
                           border: "2px solid #e9ecef",
@@ -908,6 +915,7 @@ const HRLeaveRequestTable = () => {
                         value={formData.End_Date}
                         onChange={handleChange}
                         required
+                        min={formData.Start_Date || new Date().toISOString().split('T')[0]}
                         disabled={saving}
                         style={{
                           border: "2px solid #e9ecef",
@@ -918,40 +926,65 @@ const HRLeaveRequestTable = () => {
                     </div>
                   </div>
                 </div>
-                <div className="col-md-6">
-  <div className="mb-3">
-    <label className="form-label fw-bold" style={{ color: "#2c5f5d" }}>
-      <Clock size={16} className="me-1" />
-      Status *
-    </label>
-    <input
-      type="text"
-      className="form-control"
-      value="Pending"
-      readOnly
-      style={{
-        border: "2px solid #e9ecef",
-        borderRadius: "8px",
-        padding: "10px 12px",
-        background: "#f8f9fa"
-      }}
-    />
-  </div>
-</div>
 
+                {/* Days Calculation */}
+                {formData.Start_Date && formData.End_Date && (
+                  <div className="row mb-3">
+                    <div className="col-12">
+                      <div 
+                        className="alert"
+                        style={{
+                          background: "rgba(63, 226, 205, 0.1)",
+                          border: "1px solid rgba(63, 226, 205, 0.3)",
+                          borderRadius: "8px",
+                          color: "#2c5f5d"
+                        }}
+                      >
+                        <Clock size={16} className="me-2" />
+                        <strong>Total Days:</strong> {calculateLeaveDays(formData.Start_Date, formData.End_Date)} days
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Status (read-only) */}
+                <div className="row mb-3">
+                  <div className="col-md-6">
+                    <div className="mb-3">
+                      <label className="form-label fw-bold" style={{ color: "#2c5f5d" }}>
+                        <Clock size={16} className="me-1" />
+                        Status
+                      </label>
+                      <input
+                        type="text"
+                        className="form-control"
+                        value={formData.status || "Pending"}
+                        readOnly
+                        style={{
+                          border: "2px solid #e9ecef",
+                          borderRadius: "8px",
+                          padding: "10px 12px",
+                          background: "#f8f9fa"
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Reason */}
                 <div className="row">
-                  <div className="col-md-12">
+                  <div className="col-12">
                     <div className="mb-3">
                       <label className="form-label fw-bold" style={{ color: "#2c5f5d" }}>
                         <FileText size={16} className="me-1" />
-                        Reason
+                        Reason for Leave
                       </label>
                       <textarea
                         className="form-control"
                         name="Reason"
                         value={formData.Reason}
                         onChange={handleChange}
-                        placeholder="Enter reason for leave"
+                        placeholder="Please provide the reason for your leave request..."
                         rows="4"
                         disabled={saving}
                         style={{
@@ -960,6 +993,7 @@ const HRLeaveRequestTable = () => {
                           padding: "10px 12px"
                         }}
                       />
+                      <small className="text-muted">Optional but recommended</small>
                     </div>
                   </div>
                 </div>
@@ -997,7 +1031,7 @@ const HRLeaveRequestTable = () => {
                     padding: "10px 20px"
                   }}
                 >
-                  {saving ? 'Saving...' : (editingRequest ? 'Update Request' : 'Save Request')}
+                  {saving ? 'Submitting...' : (editingRequest ? 'Update Request' : 'Submit Request')}
                 </button>
               </div>
             </div>
@@ -1033,9 +1067,7 @@ const HRLeaveRequestTable = () => {
                   borderBottom: "none"
                 }}
               >
-                <h5 className="modal-title fw-bold">
-                  Leave Request Details
-                </h5>
+                <h5 className="modal-title fw-bold">Leave Request Details</h5>
                 <button 
                   className="btn-close btn-close-white" 
                   onClick={() => setShowViewModal(false)}
@@ -1043,22 +1075,6 @@ const HRLeaveRequestTable = () => {
               </div>
               <div className="modal-body p-4" style={{ background: "#ffffff" }}>
                 <div className="row">
-                  <div className="col-md-6">
-                    <div className="mb-3">
-                      <label className="form-label fw-bold" style={{ color: "#2c5f5d" }}>
-                        <AlertCircle size={16} className="me-1" />
-                        Leave ID
-                      </label>
-                      <p className="mb-0 p-2" style={{ 
-                        color: "#5a6c6b", 
-                        background: "#f8f9fa",
-                        borderRadius: "6px",
-                        border: "1px solid #e9ecef"
-                      }}>
-                        {viewingRequest.Leave_Id || 'N/A'}
-                      </p>
-                    </div>
-                  </div>
                   <div className="col-md-6">
                     <div className="mb-3">
                       <label className="form-label fw-bold" style={{ color: "#2c5f5d" }}>
@@ -1071,13 +1087,41 @@ const HRLeaveRequestTable = () => {
                         borderRadius: "6px",
                         border: "1px solid #e9ecef"
                       }}>
-                        {getEmployeeName(viewingRequest.Employee_Id, viewingRequest.First_Name, viewingRequest.Last_Name)} ({viewingRequest.Employee_Id})
+                        {getEmployeeName(viewingRequest.Employee_Id, viewingRequest.First_Name, viewingRequest.Last_Name)}
+                        <br />
+                        <small className="text-muted">ID: {viewingRequest.Employee_Id}</small>
                       </p>
                     </div>
                   </div>
-                </div>
-                <div className="row">
                   <div className="col-md-6">
+                    <div className="mb-3">
+                      <label className="form-label fw-bold" style={{ color: "#2c5f5d" }}>
+                        <Calendar size={16} className="me-1" />
+                        Leave Type
+                      </label>
+                      <div className="p-2" style={{ 
+                        background: "#f8f9fa",
+                        borderRadius: "6px",
+                        border: "1px solid #e9ecef"
+                      }}>
+                        <span 
+                          className="badge px-3 py-2"
+                          style={{ 
+                            background: getLeaveTypeColor(viewingRequest.Leave_Type),
+                            color: "white",
+                            borderRadius: "20px",
+                            fontSize: "0.875rem"
+                          }}
+                        >
+                          {viewingRequest.Leave_Type}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="row">
+                  <div className="col-md-4">
                     <div className="mb-3">
                       <label className="form-label fw-bold" style={{ color: "#2c5f5d" }}>
                         <CalendarDays size={16} className="me-1" />
@@ -1093,7 +1137,7 @@ const HRLeaveRequestTable = () => {
                       </p>
                     </div>
                   </div>
-                  <div className="col-md-6">
+                  <div className="col-md-4">
                     <div className="mb-3">
                       <label className="form-label fw-bold" style={{ color: "#2c5f5d" }}>
                         <CalendarDays size={16} className="me-1" />
@@ -1109,13 +1153,11 @@ const HRLeaveRequestTable = () => {
                       </p>
                     </div>
                   </div>
-                </div>
-                <div className="row">
-                  <div className="col-md-6">
+                  <div className="col-md-4">
                     <div className="mb-3">
                       <label className="form-label fw-bold" style={{ color: "#2c5f5d" }}>
                         <Clock size={16} className="me-1" />
-                        Total Days
+                        Duration
                       </label>
                       <p className="mb-0 p-2" style={{ 
                         color: "#5a6c6b", 
@@ -1127,6 +1169,9 @@ const HRLeaveRequestTable = () => {
                       </p>
                     </div>
                   </div>
+                </div>
+
+                <div className="row">
                   <div className="col-md-6">
                     <div className="mb-3">
                       <label className="form-label fw-bold" style={{ color: "#2c5f5d" }}>
@@ -1152,15 +1197,32 @@ const HRLeaveRequestTable = () => {
                       </div>
                     </div>
                   </div>
+                  <div className="col-md-6">
+                    <div className="mb-3">
+                      <label className="form-label fw-bold" style={{ color: "#2c5f5d" }}>
+                        <AlertCircle size={16} className="me-1" />
+                        Request ID
+                      </label>
+                      <p className="mb-0 p-2" style={{ 
+                        color: "#5a6c6b", 
+                        background: "#f8f9fa",
+                        borderRadius: "6px",
+                        border: "1px solid #e9ecef"
+                      }}>
+                        #{viewingRequest.Leave_Id || 'N/A'}
+                      </p>
+                    </div>
+                  </div>
                 </div>
+                
                 <div className="row">
-                  <div className="col-md-12">
+                  <div className="col-12">
                     <div className="mb-3">
                       <label className="form-label fw-bold" style={{ color: "#2c5f5d" }}>
                         <FileText size={16} className="me-1" />
                         Reason
                       </label>
-                      <p className="mb-0 p-2" style={{ 
+                      <div className="p-3" style={{ 
                         color: "#5a6c6b", 
                         background: "#f8f9fa",
                         borderRadius: "6px",
@@ -1168,10 +1230,32 @@ const HRLeaveRequestTable = () => {
                         minHeight: "80px"
                       }}>
                         {viewingRequest.Reason || 'No reason provided'}
-                      </p>
+                      </div>
                     </div>
                   </div>
                 </div>
+
+                {/* Comments section if available */}
+                {viewingRequest.comments && (
+                  <div className="row">
+                    <div className="col-12">
+                      <div className="mb-3">
+                        <label className="form-label fw-bold" style={{ color: "#2c5f5d" }}>
+                          <MessageSquare size={16} className="me-1" />
+                          Comments
+                        </label>
+                        <div className="p-3" style={{ 
+                          color: "#5a6c6b", 
+                          background: "#fff3cd",
+                          borderRadius: "6px",
+                          border: "1px solid #ffeaa7"
+                        }}>
+                          {viewingRequest.comments}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
               <div 
                 className="modal-footer" 
@@ -1199,8 +1283,35 @@ const HRLeaveRequestTable = () => {
           </div>
         </div>
       )}
+
+      {/* Empty State */}
+      {currentRequests.length === 0 && (
+        <div className="text-center py-5">
+          <Calendar size={48} className="text-muted mb-3" />
+          <h5 className="text-muted">No leave requests found</h5>
+          <p className="text-muted mb-4">
+            {search || filterStatus || filterEmployee || filterLeaveType
+              ? "Try adjusting your filters to see more results."
+              : "You haven't submitted any leave requests yet."
+            }
+          </p>
+          <button 
+            className="btn"
+            style={{
+              background: "linear-gradient(45deg, #28a745, #20c997)",
+              color: "white",
+              border: "none",
+              borderRadius: "8px"
+            }}
+            onClick={openAddModal}
+          >
+            <Plus size={16} className="me-1" />
+            Add Your First Leave Request
+          </button>
+        </div>
+      )}
     </div>
   );
 };
 
-export default HRLeaveRequestTable;
+export default LeaveRequestTable;

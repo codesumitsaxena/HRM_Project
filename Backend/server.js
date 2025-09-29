@@ -8,6 +8,7 @@ const employeeRoutes = require('./routes/employeeRoutes');
 const leaveRoutes = require('./routes/LeaveRoutes');
 const departmentRoutes = require('./routes/department');
 const attendanceRoutes = require("./routes/attendenceRoutes");
+const hrLeaveRoutes = require('./routes/hrleaveRequestRoutes')
 
 const app = express();
 
@@ -18,12 +19,12 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 // Routes
 app.use('/api/auth', authRoutes); // Auth routes (signup/login/profile)
-
-// Protected routes - Remove authenticateToken from here since routes handle their own auth
 app.use('/employees', employeeRoutes);
 app.use('/leaves', leaveRoutes);
 app.use('/departments', departmentRoutes);
 app.use('/attendance', attendanceRoutes);
+app.use('/hr-leaves', hrLeaveRoutes);
+
 
 // Test route
 app.get('/', (req, res) => {
