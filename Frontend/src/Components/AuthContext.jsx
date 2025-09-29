@@ -31,8 +31,6 @@ export const AuthProvider = ({ children }) => {
         // Set axios default header
         axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
         
-        // Verify token with backend (optional, remove if causing issues)
-        // verifyToken();
       } catch (error) {
         console.error('Error parsing user data:', error);
         logout();

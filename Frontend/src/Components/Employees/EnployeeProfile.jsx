@@ -215,38 +215,51 @@ const EmployeeProfile = () => {
   };
 
   // Handle profile image upload
-  const handleProfileImageUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+ // Handle profile image upload
+ const handleProfileImageUpload = async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
 
-    // Validate file
-    if (!file.type.startsWith('image/')) {
-      alert('Please select an image file');
-      return;
-    }
+  // Validate file
+  if (!file.type.startsWith('image/')) {
+    alert('Please select an image file');
+    return;
+  }
 
-    if (file.size > 5 * 1024 * 1024) {
-      alert('File size should be less than 5MB');
-      return;
-    }
+  if (file.size > 5 * 1024 * 1024) {
+    alert('File size should be less than 5MB');
+    return;
+  }
 
-    setUploadingImage(true);
-    
-    // Create preview
+  setUploadingImage(true);
+  
+  try {
+    // Create preview first
     const reader = new FileReader();
     reader.onload = (e) => {
       setProfileImagePreview(e.target.result);
     };
     reader.readAsDataURL(file);
 
-    // Upload to server
+    // Upload to server and get the path
     const imagePath = await uploadImage(file);
     if (imagePath) {
+      // Update editData with the server path
       setEditData(prev => ({ ...prev, Image_Path: imagePath }));
+      console.log('Image uploaded successfully:', imagePath);
+    } else {
+      // Reset preview if upload failed
+      setProfileImagePreview(employeeData.Image_Path || '');
+      alert('Failed to upload image. Please try again.');
     }
-    
+  } catch (error) {
+    console.error('Error in image upload:', error);
+    setProfileImagePreview(employeeData.Image_Path || '');
+    alert('Error uploading image. Please try again.');
+  } finally {
     setUploadingImage(false);
-  };
+  }
+};
 
   // Remove profile image
   const removeProfileImage = () => {

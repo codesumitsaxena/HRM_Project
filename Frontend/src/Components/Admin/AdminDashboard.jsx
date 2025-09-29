@@ -260,8 +260,9 @@ const AdminDashboard = () => {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          Status: action,
-          Comments: comments
+          status: action,
+          comments: comments
+            
         }),
       });
 

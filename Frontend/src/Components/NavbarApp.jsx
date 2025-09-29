@@ -209,7 +209,7 @@ const DynamicNavbar = ({ onSidebarToggle, isSidebarCollapsed }) => {
         className="shadow-sm border-bottom"
         style={{
           background: "linear-gradient(135deg, #3fe2cd47, #ffffff95)",
-          minHeight: "70px",
+          minHeight: "auto",
           backdropFilter: "blur(10px)",
           zIndex: 1030
         }}

@@ -11,7 +11,9 @@ const Dashboard = () => {
   const closeSidebar = () => setShowSidebar(false);
 
   return (
-    <> <NavbarTop />
+    <>
+    
+     <NavbarTop />
       <Sidebar show={showSidebar} handleClose={closeSidebar} />
 
       {/* <Container className="mt-4">

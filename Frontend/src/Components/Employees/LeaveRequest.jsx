@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Calendar, Plus, Search, Edit3, Trash2, Eye, 
   Filter, Download, Upload, Clock, CheckCircle, 
-  XCircle, User, FileText, CalendarDays, AlertCircle,
+  XCircle, User,MessageSquare , FileText, CalendarDays, AlertCircle,
   Building2, Users
 } from 'lucide-react';
 
@@ -316,13 +316,18 @@ const LeaveRequestTable = () => {
   };
 
   const filteredRequests = leaveRequests.filter(request => {
+    // Filter to show only current user's leave requests
+    const userEmployeeId = currentUser?.employeeId || currentUser?.userId;
+    const isUserRequest = request.Employee_Id == userEmployeeId;
+    
+    if (!isUserRequest) return false;
+    
     const employeeName = getEmployeeName(request.Employee_Id, request.First_Name, request.Last_Name);
     const searchText = `${employeeName} ${request.Leave_Id || ''} ${request.Reason || ''} ${request.leave_type || ''}`.toLowerCase();
     const matchesSearch = searchText.includes(search.toLowerCase());
     const matchesStatus = filterStatus === '' || request.status === filterStatus;
-    const matchesEmployee = filterEmployee === '' || request.Employee_Id == filterEmployee;
     const matchesLeaveType = filterLeaveType === '' || request.leave_type === filterLeaveType;
-    return matchesSearch && matchesStatus && matchesEmployee && matchesLeaveType;
+    return matchesSearch && matchesStatus && matchesLeaveType;
   });
 
   // Pagination
