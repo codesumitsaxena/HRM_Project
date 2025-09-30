@@ -520,30 +520,50 @@ const EmployeeAddEditModal = ({
     }
   };
 
-  // Handle Save (for Step 2 - Employee Details)
-  const handleSave = () => {
+  const handleSave = async () => {
     if (currentStep === 2 && validateStep2()) {
-      // Update step2Data with education qualifications
-      const updatedStep2Data = { ...step2Data };
-      educationQualifications.forEach(edu => {
-        const fieldName = `${edu.type}_Roll_Number`;
-        updatedStep2Data[fieldName] = edu.rollNumber;
-      });
-
-      // For editing existing employee, just save employee data
-      // For new employee, the user account is already created in step 1
-      const completeData = editingEmployee 
-        ? updatedStep2Data 
-        : {
-            // Step 1 data (user account already created)
-            ...step1Data,
-            // Step 2 data (employee details)
-            ...updatedStep2Data
-          };
-
-      onSave(completeData);
+      try {
+        // 🔹 Update step2Data with education qualifications
+        const updatedStep2Data = { ...step2Data };
+        educationQualifications.forEach((edu) => {
+          const fieldName = `${edu.type}_Roll_Number`;
+          updatedStep2Data[fieldName] = edu.rollNumber;
+        });
+  
+        // 🔹 For editing existing employee, just save employee data
+        // 🔹 For new employee, the user account is already created in step 1
+        const completeData = editingEmployee
+          ? updatedStep2Data
+          : {
+              // Step 1 data (user account already created)
+              ...step1Data,
+              // Step 2 data (employee details)
+              ...updatedStep2Data,
+            };
+  
+        // 🔹 Save employee data
+        const result = await onSave(completeData);
+  
+        // 🔹 Show email status
+        if (result?.emailSent) {
+          alert(
+            `${editingEmployee ? "Employee updated" : "Employee created"} successfully! Welcome email sent to ${updatedStep2Data.Email}`
+          );
+        } else {
+          alert(
+            `${editingEmployee ? "Employee updated" : "Employee created"} successfully! However, the welcome email could not be sent.`
+          );
+        }
+      } catch (error) {
+        console.error("Error while saving employee:", error);
+        alert("Something went wrong while saving employee. Please try again.");
+      }
     }
   };
+  
+
+
+ 
 
   const getAvailableEducationTypes = () => {
     return educationTypes.filter(type => 

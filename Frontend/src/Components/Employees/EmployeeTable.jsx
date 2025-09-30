@@ -98,85 +98,77 @@ const EmployeeTable = () => {
   };
 
   // FIXED: Updated handleSave function with proper data formatting and error handling
-  const handleSave = async (formData) => {
-    setSaving(true);
-    try {
-        console.log("Received form data:", formData);
-        
-        // Format data properly for the API
-        const formattedData = {
-            ...formData,
-            // Format dates properly
-            Join_Date: formData.Join_Date
-                ? new Date(formData.Join_Date).toISOString().split("T")[0]
-                : null,
-            Date_Of_Birth: formData.Date_Of_Birth
-                ? new Date(formData.Date_Of_Birth).toISOString().split("T")[0]
-                : null,
-            Resigned_Date: formData.Resigned_Date
-                ? new Date(formData.Resigned_Date).toISOString().split("T")[0]
-                : null,
-            // Convert numbers properly
-            Department_Id: formData.Department_Id ? parseInt(formData.Department_Id) : null,
-            Basic_Salary: formData.Basic_Salary ? parseFloat(formData.Basic_Salary) : null,
-            Work_Experience: formData.Work_Experience ? parseFloat(formData.Work_Experience) : 0.0
-        };
+// UPDATED handleSave function - Replace your existing handleSave (line 113)
+const handleSave = async (formData) => {
+  setSaving(true);
+  try {
+    console.log("Received form data:", formData);
+    
+    // Format data properly for the API
+    const formattedData = {
+      ...formData,
+      // Format dates properly
+      Join_Date: formData.Join_Date
+        ? new Date(formData.Join_Date).toISOString().split("T")[0]
+        : null,
+      Date_Of_Birth: formData.Date_Of_Birth
+        ? new Date(formData.Date_Of_Birth).toISOString().split("T")[0]
+        : null,
+      Resigned_Date: formData.Resigned_Date
+        ? new Date(formData.Resigned_Date).toISOString().split("T")[0]
+        : null,
+      // Convert numbers properly
+      Department_Id: formData.Department_Id ? parseInt(formData.Department_Id) : null,
+      Basic_Salary: formData.Basic_Salary ? parseFloat(formData.Basic_Salary) : null,
+      Work_Experience: formData.Work_Experience ? parseFloat(formData.Work_Experience) : 0.0
+    };
 
-        console.log("Sending formatted data:", formattedData);
+    console.log("Sending formatted data:", formattedData);
 
-        const token = localStorage.getItem("token");
+    const token = localStorage.getItem("token");
+    const url = editingEmployee 
+      ? `http://localhost:3000/employees/${editingEmployee.Employee_Id}`
+      : 'http://localhost:3000/employees';
+    
+    const method = editingEmployee ? 'PUT' : 'POST';
 
-        if (editingEmployee) {
-            // Update existing employee
-            const response = await fetch(
-                `http://localhost:3000/employees/${editingEmployee.Employee_Id}`,
-                {
-                    method: "PUT",
-                    headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${token}`,
-                    },
-                    body: JSON.stringify(formattedData),
-                }
-            );
+    const response = await fetch(url, {
+      method: method,
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(formattedData),
+    });
 
-            if (response.ok) {
-                alert("Employee updated successfully!");
-                await fetchEmployees(); // Refresh the employee list
-                setShowModal(false);
-            } else {
-                const errorData = await response.json();
-                console.error("Update error:", errorData);
-                alert(`Failed to update employee: ${errorData.error || errorData.message || "Unknown error"}`);
-            }
-        } else {
-            // Add new employee
-            const response = await fetch("http://localhost:3000/employees", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
-                },
-                body: JSON.stringify(formattedData),
-            });
+    const result = await response.json();
 
-            if (response.ok) {
-                alert("Employee added successfully!");
-                await fetchEmployees(); // Refresh the employee list
-                setShowModal(false);
-            } else {
-                const errorData = await response.json();
-                console.error("Add error:", errorData);
-                alert(`Failed to add employee: ${errorData.error || errorData.message || "Unknown error"}`);
-            }
-        }
-    } catch (error) {
-        console.error("Error saving employee:", error);
-        alert("Error saving employee. Please try again.");
-    } finally {
-        setSaving(false);
+    if (response.ok) {
+      // Check if email was sent (for new employees)
+      if (!editingEmployee && result.emailSent) {
+        alert(`Employee added successfully!\n\nWelcome email has been sent to ${formattedData.Email} with setup instructions.`);
+      } else if (!editingEmployee && !result.emailSent) {
+        alert(`Employee added successfully!\n\nHowever, the welcome email could not be sent. Please manually send credentials to ${formattedData.Email}`);
+      } else {
+        alert("Employee updated successfully!");
+      }
+      
+      await fetchEmployees(); // Refresh the employee list
+      setShowModal(false);
+      return result; // Return result to modal
+    } else {
+      console.error("Save error:", result);
+      alert(`Failed to save employee: ${result.error || result.message || "Unknown error"}`);
+      return null;
     }
-  };
+  } catch (error) {
+    console.error("Error saving employee:", error);
+    alert("Error saving employee. Please check your internet connection and try again.");
+    return null;
+  } finally {
+    setSaving(false);
+  }
+};
 
   const handleDelete = async (employeeId) => {
     if (!window.confirm('Are you sure you want to delete this employee?')) {
