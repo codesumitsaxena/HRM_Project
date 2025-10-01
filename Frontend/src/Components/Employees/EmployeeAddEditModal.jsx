@@ -523,36 +523,38 @@ const EmployeeAddEditModal = ({
   const handleSave = async () => {
     if (currentStep === 2 && validateStep2()) {
       try {
-        // 🔹 Update step2Data with education qualifications
+        // Update step2Data with education qualifications
         const updatedStep2Data = { ...step2Data };
         educationQualifications.forEach((edu) => {
           const fieldName = `${edu.type}_Roll_Number`;
           updatedStep2Data[fieldName] = edu.rollNumber;
         });
   
-        // 🔹 For editing existing employee, just save employee data
-        // 🔹 For new employee, the user account is already created in step 1
         const completeData = editingEmployee
           ? updatedStep2Data
           : {
-              // Step 1 data (user account already created)
               ...step1Data,
-              // Step 2 data (employee details)
               ...updatedStep2Data,
             };
   
-        // 🔹 Save employee data
+        // Save employee data
         const result = await onSave(completeData);
   
-        // 🔹 Show email status
-        if (result?.emailSent) {
-          alert(
-            `${editingEmployee ? "Employee updated" : "Employee created"} successfully! Welcome email sent to ${updatedStep2Data.Email}`
-          );
+        // Show appropriate message based on mode and email status
+        if (editingEmployee) {
+          // EDIT MODE - No email sent
+          alert('Employee updated successfully!');
         } else {
-          alert(
-            `${editingEmployee ? "Employee updated" : "Employee created"} successfully! However, the welcome email could not be sent.`
-          );
+          // ADD MODE - Check if email was sent
+          if (result?.emailSent) {
+            alert(
+              `Employee created successfully! 🎉\n\nWelcome email has been sent to ${updatedStep2Data.Email}`
+            );
+          } else {
+            alert(
+              `Employee created successfully!\n\nHowever, the welcome email could not be sent. Please manually contact the employee at ${updatedStep2Data.Email}`
+            );
+          }
         }
       } catch (error) {
         console.error("Error while saving employee:", error);
@@ -560,7 +562,6 @@ const EmployeeAddEditModal = ({
       }
     }
   };
-  
 
 
  

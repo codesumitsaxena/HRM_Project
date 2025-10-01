@@ -12,6 +12,7 @@ function buildUpdateQuery(body) {
   return { sets, values };
 }
 
+// CREATE Employee with Email
 exports.createEmployee = (req, res) => {
   const data = req.body;
   const keys = Object.keys(data).filter(k => allowedFields.includes(k));
@@ -43,18 +44,18 @@ exports.createEmployee = (req, res) => {
         });
       }
       
-      // Send simple welcome email (NO tokens needed)
+      // Send welcome email ONLY when creating new employee
       const employeeData = {
         email: employee.Email,
         firstName: employee.First_Name || 'Employee',
         lastName: employee.Last_Name || ''
       };
       
-      console.log('Attempting to send welcome email to:', employeeData.email);
+      console.log('🔹 NEW EMPLOYEE CREATED - Sending welcome email to:', employeeData.email);
       
       sendWelcomeEmail(employeeData, (emailErr, emailResult) => {
         if (emailErr) {
-          console.error('Email sending failed:', emailErr);
+          console.error('❌ Email sending failed:', emailErr);
           return res.status(201).json({
             employee,
             emailSent: false,
@@ -63,14 +64,13 @@ exports.createEmployee = (req, res) => {
           });
         }
         
-        console.log('Email sent successfully:', emailResult);
+        console.log('✅ Welcome email sent successfully!');
         
         // Success - employee created and email sent
         res.status(201).json({
           employee,
           emailSent: true,
-          message: 'Employee created and welcome email sent successfully',
-          messageId: emailResult.messageId
+          message: 'Employee created and welcome email sent successfully'
         });
       });
     });
@@ -108,6 +108,7 @@ exports.getEmployeeById = (req, res) => {
 };
 
 // UPDATE Employee
+// UPDATE Employee - NO EMAIL SENT
 exports.updateEmployee = (req, res) => {
   const upd = buildUpdateQuery(req.body);
   if (!upd) return res.status(400).json({ error: 'No valid fields to update' });
@@ -121,7 +122,14 @@ exports.updateEmployee = (req, res) => {
 
     db.query('SELECT * FROM Employees WHERE Employee_Id=?', [req.params.id], (err, rows) => {
       if (err) return res.status(500).json({ error: err.message });
-      res.json(rows[0]);
+      
+      console.log('✏️ EMPLOYEE UPDATED - No email sent (edit mode)');
+      
+      res.json({
+        employee: rows[0],
+        emailSent: false,
+        message: 'Employee updated successfully'
+      });
     });
   });
 };

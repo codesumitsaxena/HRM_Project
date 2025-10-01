@@ -18,47 +18,14 @@ import EmployeeDashboard from './Employees/EmployeeDashboard';
 import EmployeeProfile from './Employees/EnployeeProfile';
 import AdminDashboard from './Admin/AdminDashboard';
 import AdminLeaveManagement from './Admin/LeaveManagmentAdmin';
+import AttendanceManagement from './HR/EmployeeAttendance';
 
 const DashboardHome = () => {
   return (
     <div>
-      <div className="row mb-4">
-        <div className="col-md-3 mb-3">
-          <div className="card bg-primary text-white">
-            <div className="card-body">
-              <h5>Total Employees</h5>
-              <h2>156</h2>
-            </div>
-          </div>
-        </div>
-        <div className="col-md-3 mb-3">
-          <div className="card bg-success text-white">
-            <div className="card-body">
-              <h5>Present Today</h5>
-              <h2>142</h2>
-            </div>
-          </div>
-        </div>
-        <div className="col-md-3 mb-3">
-          <div className="card bg-warning text-white">
-            <div className="card-body">
-              <h5>On Leave</h5>
-              <h2>14</h2>
-            </div>
-          </div>
-        </div>
-        <div className="col-md-3 mb-3">
-          <div className="card bg-info text-white">
-            <div className="card-body">
-              <h5>New Hires</h5>
-              <h2>8</h2>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div className="bg-white rounded shadow-sm p-4">
-        <h4>Dashboard Overview</h4>
-        <p>Welcome to the HRM System Dashboard. Here you can view all the important metrics and information.</p>
+      <div className="bg-white rounded shadow-sm p-3 p-md-4">
+        <h4 className="h5 h4-md">Dashboard Overview</h4>
+        <p className="mb-0 small">Welcome to the HRM System Dashboard. Here you can view all the important metrics and information.</p>
       </div>
     </div>
   );
@@ -66,10 +33,10 @@ const DashboardHome = () => {
 
 const GenericPage = ({ title }) => {
   return (
-    <div className="bg-white rounded shadow-sm p-4">
-      <h4>{title}</h4>
-      <p>This is the {title.toLowerCase()} page. Content will be implemented here.</p>
-      <div className="alert alert-info">
+    <div className="bg-white rounded shadow-sm p-3 p-md-4">
+      <h4 className="h5 h4-md">{title}</h4>
+      <p className="small">This is the {title.toLowerCase()} page. Content will be implemented here.</p>
+      <div className="alert alert-info small">
         <strong>Coming Soon!</strong> This feature is under development.
       </div>
     </div>
@@ -78,6 +45,7 @@ const GenericPage = ({ title }) => {
 
 const Dashboard = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [expandedMenus, setExpandedMenus] = useState({});
   const [activeMenu, setActiveMenu] = useState('dashboard');
   
@@ -85,10 +53,22 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Close mobile menu when screen size changes
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 768) {
+        setIsMobileMenuOpen(false);
+        setIsCollapsed(false);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   // Set active menu based on current route or user role
   useEffect(() => {
     if (user) {
-      // Determine initial active menu based on user role
       switch (user.role) {
         case 'admin':
           setActiveMenu('adminDashboard');
@@ -108,10 +88,9 @@ const Dashboard = () => {
     }
   }, [user]);
 
-  // Role-based menu configuration with hierarchical access
+  // Role-based menu configuration
   const menuItems = {
     admin: [
-      // Admin Dashboard
       {
         id: 'adminDashboard',
         title: 'Admin Dashboard',
@@ -119,8 +98,6 @@ const Dashboard = () => {
         path: '/adminDashboard',
         component: 'AdminDashboard'
       },
-      
-      // Admin can access all other role dashboards
       {
         id: 'role-dashboards',
         title: 'Role Dashboards',
@@ -128,12 +105,9 @@ const Dashboard = () => {
         hasSubmenu: true,
         submenu: [
           { id: 'HRdashboard', title: 'HR Dashboard', path: '/hr-dashboard', component: 'HRDashboard' },
-          // { id: 'managerDashboard', title: 'Manager Dashboard', path: '/manager-dashboard', component: 'ManagerDashboard' },
           { id: 'employee-dashboard', title: 'Employee Dashboard', path: '/employee-dashboard', component: 'EmployeeDashboard' }
         ]
       },
-
-      // Employee Management (Admin has full access)
       {
         id: 'employees',
         title: 'Employee Management',
@@ -142,81 +116,57 @@ const Dashboard = () => {
         hasSubmenu: true,
         submenu: [
           { id: 'all-employees', title: 'All Employees', path: '/employees', component: 'EmployeeTable' },
-          // { id: 'employee-profiles', title: 'Employee Profiles', path: '/employees/profiles', component: 'EmployeeTable' },
-          { id: 'departments', title: 'Departments', path: '/Department', component: 'DepartmentTable' },
-          // { id: 'employee-profile', title: 'Individual Profile View', path: '/employee-profile', component: 'EmployeeProfile' }
+          { id: 'departments', title: 'Departments', path: '/Department', component: 'DepartmentTable' }
         ]
       },
-      
-      // Recruitment (Admin + HR level access)
-      // {
-      //   id: 'recruitment',
-      //   title: 'Recruitment',
-      //   icon: UserPlus,
-      //   hasSubmenu: true,
-      //   submenu: [
-      //     { id: 'job-postings', title: 'Job Postings', path: '/recruitment/jobs', component: 'JobPostings' },
-      //     { id: 'applications', title: 'Applications', path: '/recruitment/applications', component: 'Applications' },
-      //     { id: 'interviews', title: 'Interviews', path: '/recruitment/interviews', component: 'Interviews' }
-      //   ]
-      // },
-      
-      // Attendance & Leave Management (All levels)
       {
         id: 'attendance',
-        title: 'Attendance & Leave Management',
+        title: 'Attendance & Leave',
         icon: Clock,
         hasSubmenu: true,
         submenu: [
           { id: 'daily-attendance', title: 'Daily Attendance', path: '/attendance/daily', component: 'DailyAttendance' },
           { id: 'monthly-report', title: 'Monthly Reports', path: '/attendance/monthly', component: 'MonthlyAttendance' },
-          { id: 'admin-leave-management', title: 'Admin Leave Management', path: '/admin/attendance/leaves', component: 'AdminLeaveManagement' },
+          { id: 'admin-leave-management', title: 'Leave Management', path: '/admin/attendance/leaves', component: 'AdminLeaveManagement' },
           { id: 'hr-leave-requests', title: 'HR Leave Requests', path: '/hr-leave-requests', component: 'HRleaveRequest' },
-          { id: 'leave-request', title: 'Employee Leave Request', path: '/attendance/leave-request', component: 'LeaveRequest' },
-          { id: 'employee-attendance', title: 'Employee Attendance History', path: '/employee-attendance', component: 'AttendanceTable' },
-          
+          { id: 'leave-request', title: 'Leave Request', path: '/attendance/leave-request', component: 'LeaveRequest' },
+          { id: 'employee-attendance', title: 'Attendance History', path: '/employee-attendance', component: 'AttendanceTable' }
         ]
       },
-      
-      // Payroll Management
       {
         id: 'payroll',
-        title: 'Payroll Management',
+        title: 'Payroll',
         icon: DollarSign,
         hasSubmenu: true,
         submenu: [
           { id: 'salary-structure', title: 'Salary Structure', path: '/payroll/structure', component: 'SalaryStructure' },
-          { id: 'payroll-processing', title: 'Payroll Processing', path: '/payroll/processing', component: 'PayrollProcessing' },
+          { id: 'payroll-processing', title: 'Processing', path: '/payroll/processing', component: 'PayrollProcessing' },
           { id: 'payslips', title: 'Pay Slips', path: '/payroll/payslips', component: 'PaySlips' },
           { id: 'tax-management', title: 'Tax Management', path: '/payroll/tax', component: 'TaxManagement' }
         ]
       },
-      
-      // Performance Management
       {
         id: 'performance',
-        title: 'Performance Management',
+        title: 'Performance',
         icon: BarChart3,
         hasSubmenu: true,
         submenu: [
           { id: 'appraisals', title: 'Appraisals', path: '/performance/appraisals', component: 'Appraisals' },
           { id: 'goals', title: 'Goals & KPIs', path: '/performance/goals', component: 'Goals' },
-          { id: 'reviews', title: 'Performance Reviews', path: '/performance/reviews', component: 'PerformanceReviews' },
+          { id: 'reviews', title: 'Reviews', path: '/performance/reviews', component: 'PerformanceReviews' },
           { id: 'team-performance', title: 'Team Performance', path: '/performance/team', component: 'TeamPerformance' }
         ]
       },
-      
-      // Reports & Analytics
       {
         id: 'reports',
-        title: 'Reports & Analytics',
+        title: 'Reports',
         icon: FileText,
         hasSubmenu: true,
         submenu: [
           { id: 'employee-reports', title: 'Employee Reports', path: '/reports/employees', component: 'EmployeeReports' },
           { id: 'attendance-reports', title: 'Attendance Reports', path: '/reports/attendance', component: 'AttendanceReports' },
           { id: 'payroll-reports', title: 'Payroll Reports', path: '/reports/payroll', component: 'PayrollReports' },
-          { id: 'analytics', title: 'HR Analytics', path: '/reports/analytics', component: 'HRAnalytics' }
+          { id: 'analytics', title: 'Analytics', path: '/reports/analytics', component: 'HRAnalytics' }
         ]
       },
       {
@@ -226,10 +176,9 @@ const Dashboard = () => {
         path: '/employee-profile',
         component: 'EmployeeProfile'
       },
-      // System Settings (Admin only)
       {
         id: 'settings',
-        title: 'System Settings',
+        title: 'Settings',
         icon: Settings,
         hasSubmenu: true,
         submenu: [
@@ -240,7 +189,6 @@ const Dashboard = () => {
       }
     ],
     hr: [
-      // HR Dashboard (HR's main dashboard)
       {
         id: 'HRdashboard',
         title: 'HR Dashboard',
@@ -248,33 +196,15 @@ const Dashboard = () => {
         path: '/hr-dashboard',
         component: 'HRDashboard'
       },
-      
-      // HR can access employee role dashboard
-      // {
-      //   id: 'role-access',
-      //   title: 'Role Access',
-      //   icon: Shield,
-      //   hasSubmenu: true,
-      //   submenu: [
-      //     { id: 'employee-dashboard', title: 'Employee Dashboard', path: '/employee-dashboard', component: 'EmployeeDashboard' },
-      //     { id: 'managerDashboard', title: 'Manager Dashboard', path: '/manager-dashboard', component: 'ManagerDashboard' }
-      //   ]
-      // },
-      
-      // Employee Management (HR level access)
       {
         id: 'employees',
         title: 'Employee Management',
         icon: Users,
         hasSubmenu: true,
         submenu: [
-          { id: 'all-employees', title: 'All Employees', path: '/employees', component: 'EmployeeTable' },
-          // { id: 'employee-profiles', title: 'Employee Profiles', path: '/employees/profiles', component: 'EmployeeTable' },
-          // { id: 'employee-profile', title: 'Individual Profile View', path: '/employee-profile', component: 'EmployeeProfile' }
+          { id: 'all-employees', title: 'All Employees', path: '/employees', component: 'EmployeeTable' }
         ]
       },
-      
-      // Recruitment (HR responsibility)
       {
         id: 'recruitment',
         title: 'Recruitment',
@@ -286,18 +216,16 @@ const Dashboard = () => {
           { id: 'interviews', title: 'Interviews', path: '/recruitment/interviews', component: 'Interviews' }
         ]
       },
-      
-      // Attendance Management (HR can see all)
       {
         id: 'attendance',
-        title: 'Attendance Management',
+        title: 'Attendance',
         icon: Clock,
         hasSubmenu: true,
         submenu: [
-          { id: 'daily-attendance', title: 'Daily Attendance', path: '/attendance/daily', component: 'DailyAttendance' },
+          { id: 'attendance-management', title: 'Daily Attendance', path: '/attendance/daily', component: 'AttendanceManagement' },
           { id: 'hr-leave-requests', title: 'Leave Requests', path: '/hr-leave-requests', component: 'HRleaveRequest' },
-          { id: 'employee-attendance', title: 'Employee Attendance History', path: '/employee-attendance', component: 'AttendanceTable' },
-                  ]
+          { id: 'employee-attendance', title: 'Attendance History', path: '/employee-attendance', component: 'AttendanceTable' }
+        ]
       },
       {
         id: 'employee-profile',
@@ -306,11 +234,9 @@ const Dashboard = () => {
         path: '/employee-profile',
         component: 'EmployeeProfile'
       },
-      
-      // Basic Reports
       {
         id: 'reports',
-        title: 'HR Reports',
+        title: 'Reports',
         icon: FileText,
         hasSubmenu: true,
         submenu: [
@@ -319,65 +245,6 @@ const Dashboard = () => {
         ]
       }
     ],
-    // manager: [
-    //   // Manager Dashboard
-    //   {
-    //     id: 'managerDashboard',
-    //     title: 'Manager Dashboard',
-    //     icon: Home,
-    //     path: '/manager-dashboard',
-    //     component: 'ManagerDashboard'
-    //   },
-      
-    //   // Manager can access employee dashboard
-    //   {
-    //     id: 'role-access',
-    //     title: 'Team Access',
-    //     icon: Shield,
-    //     hasSubmenu: true,
-    //     submenu: [
-    //       { id: 'employee-dashboard', title: 'Employee Dashboard', path: '/employee-dashboard', component: 'EmployeeDashboard' }
-    //     ]
-    //   },
-      
-    //   // Team Management
-    //   {
-    //     id: 'team',
-    //     title: 'Team Management',
-    //     icon: Users,
-    //     hasSubmenu: true,
-    //     submenu: [
-    //       { id: 'team-members', title: 'Team Members', path: '/team/members', component: 'TeamMembers' },
-    //       { id: 'team-attendance', title: 'Team Attendance', path: '/team/attendance', component: 'TeamAttendance' },
-    //       { id: 'all-employees', title: 'View All Employees', path: '/employees', component: 'EmployeeTable' },
-    //       { id: 'employee-profile', title: 'Employee Profile View', path: '/employee-profile', component: 'EmployeeProfile' }
-    //     ]
-    //   },
-      
-    //   // Performance Management
-    //   {
-    //     id: 'performance',
-    //     title: 'Performance Management',
-    //     icon: BarChart3,
-    //     hasSubmenu: true,
-    //     submenu: [
-    //       { id: 'team-performance', title: 'Team Performance', path: '/performance/team', component: 'TeamPerformance' },
-    //       { id: 'appraisals', title: 'Appraisals', path: '/performance/appraisals', component: 'Appraisals' }
-    //     ]
-    //   },
-      
-    //   // Leave Management
-    //   {
-    //     id: 'leave-management',
-    //     title: 'Leave Management',
-    //     icon: Clock,
-    //     hasSubmenu: true,
-    //     submenu: [
-    //       { id: 'team-leave-requests', title: 'Team Leave Requests', path: '/manager/leave-requests', component: 'ManagerLeaveRequests' },
-    //       { id: 'employee-attendance', title: 'Employee Attendance', path: '/employee-attendance', component: 'AttendanceTable' }
-    //     ]
-    //   }
-    // ],
     employee: [
       {
         id: 'employee-dashboard',
@@ -400,7 +267,7 @@ const Dashboard = () => {
         hasSubmenu: true,
         submenu: [
           { id: 'check-in-out', title: 'Check In/Out', path: '/attendance/checkin', component: 'CheckInOut' },
-          { id: 'employee-attendance', title: 'Attendance History', path: '/employee-attendance', component: 'AttendanceTable' },
+          { id: 'employee-attendance', title: 'History', path: '/employee-attendance', component: 'AttendanceTable' },
           { id: 'leave-request', title: 'Leave Request', path: '/attendance/leave-request', component: 'LeaveRequest' }
         ]
       },
@@ -410,7 +277,7 @@ const Dashboard = () => {
         icon: DollarSign,
         hasSubmenu: true,
         submenu: [
-          { id: 'payslips', title: 'My Pay Slips', path: '/payroll/my-payslips', component: 'MyPaySlips' },
+          { id: 'payslips', title: 'Pay Slips', path: '/payroll/my-payslips', component: 'MyPaySlips' },
           { id: 'tax-documents', title: 'Tax Documents', path: '/payroll/tax-docs', component: 'TaxDocuments' }
         ]
       }
@@ -429,11 +296,19 @@ const Dashboard = () => {
       toggleSubmenu(menuId);
     } else {
       setActiveMenu(menuId);
+      // Close mobile menu when item is clicked
+      if (window.innerWidth < 768) {
+        setIsMobileMenuOpen(false);
+      }
     }
   };
 
   const handleSubmenuClick = (submenuId) => {
     setActiveMenu(submenuId);
+    // Close mobile menu when submenu item is clicked
+    if (window.innerWidth < 768) {
+      setIsMobileMenuOpen(false);
+    }
   };
 
   const handleLogout = () => {
@@ -442,75 +317,52 @@ const Dashboard = () => {
   };
 
   const renderContent = () => {
-    // Handle dashboard rendering for different roles
     if (activeMenu === 'dashboard') {
       return <DashboardHome />;
     }
 
-    // Map active menu to components
     const componentMap = {
-      // Main Dashboards
       'adminDashboard': <AdminDashboard />,
       'HRdashboard': <HRLeaveDashboard />,
       'managerDashboard': <GenericPage title="Manager Dashboard" />,
       'employee-dashboard': <EmployeeDashboard />,
-      
-      // Employee Management
       'employee-profile': <EmployeeProfile />,
       'all-employees': <EmployeeTable />,
       'employee-profiles': <EmployeeTable />,
       'departments': <DepartmentTable />,
-      
-      // Attendance & Leave
       'leave-request': <LeaveRequest />,
       'employee-attendance': <AttendanceTable />,
       'hr-leave-requests': <HRleaveRequest />,
+      'attendance-management': <AttendanceManagement />,
       'admin-leave-management': <AdminLeaveManagement />,
-      
-      // Generic pages for features under development
-      'daily-attendance': <GenericPage title="Daily Attendance" />,
       'monthly-report': <GenericPage title="Monthly Reports" />,
       'overtime': <GenericPage title="Overtime Tracking" />,
-      
-      // Recruitment
       'job-postings': <GenericPage title="Job Postings" />,
       'applications': <GenericPage title="Applications" />,
       'interviews': <GenericPage title="Interviews" />,
-      
-      // Payroll
       'salary-structure': <GenericPage title="Salary Structure" />,
       'payroll-processing': <GenericPage title="Payroll Processing" />,
       'payslips': <GenericPage title="Pay Slips" />,
       'tax-management': <GenericPage title="Tax Management" />,
-      
-      // Performance
       'appraisals': <GenericPage title="Appraisals" />,
       'goals': <GenericPage title="Goals & KPIs" />,
       'reviews': <GenericPage title="Performance Reviews" />,
       'team-performance': <GenericPage title="Team Performance" />,
-      
-      // Team Management
       'team-members': <GenericPage title="Team Members" />,
       'team-attendance': <GenericPage title="Team Attendance" />,
-      
-      // Reports
       'employee-reports': <GenericPage title="Employee Reports" />,
       'attendance-reports': <GenericPage title="Attendance Reports" />,
       'payroll-reports': <GenericPage title="Payroll Reports" />,
       'analytics': <GenericPage title="HR Analytics" />,
-      
-      // Settings
       'company-settings': <GenericPage title="Company Settings" />,
       'user-roles': <GenericPage title="User Roles" />,
       'permissions': <GenericPage title="Permissions" />
     };
 
-    // Return specific component or generic page
     if (componentMap[activeMenu]) {
       return componentMap[activeMenu];
     }
 
-    // For other menu items, show generic page
     const allMenuItems = Object.values(menuItems).flat();
     const allSubmenuItems = allMenuItems
       .filter(item => item.hasSubmenu)
@@ -536,38 +388,48 @@ const Dashboard = () => {
         <div
           className={`d-flex align-items-center p-2 rounded cursor-pointer transition-all ${
             isActive ? 'bg-primary text-white' : 'text-secondary hover-bg-light'
-          } ${level > 0 ? 'ms-3' : ''}`}
+          } ${level > 0 ? 'ms-2 ms-md-3' : ''}`}
           onClick={() => handleMenuClick(item.id, item.hasSubmenu)}
-          style={{ cursor: 'pointer', paddingLeft: level > 0 ? '2rem' : '0.5rem' }}
+          style={{ 
+            cursor: 'pointer', 
+            paddingLeft: level > 0 ? '1.5rem' : '0.5rem',
+            fontSize: '14px'
+          }}
         >
-          {Icon && <Icon size={18} className="me-2" />}
+          {Icon && <Icon size={16} className="me-2 flex-shrink-0" />}
           {!isCollapsed && (
             <>
-              <span className="flex-grow-1">{item.title}</span>
+              <span className="flex-grow-1 text-truncate">{item.title}</span>
               {item.hasSubmenu && (
-                isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />
+                <span className="flex-shrink-0">
+                  {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                </span>
               )}
             </>
           )}
         </div>
 
         {item.hasSubmenu && isExpanded && !isCollapsed && (
-          <div className="ms-3">
+          <div className="ms-2 ms-md-3">
             {item.submenu.map(subItem => {
               const isSubActive = activeMenu === subItem.id;
               return (
                 <div
                   key={subItem.id}
-                  className={`d-flex align-items-center p-2 rounded cursor-pointer transition-all ms-3 ${
+                  className={`d-flex align-items-center p-2 rounded cursor-pointer transition-all ms-2 ms-md-3 ${
                     isSubActive ? 'bg-primary text-white' : 'text-secondary hover-bg-light'
                   }`}
                   onClick={(e) => {
                     e.stopPropagation();
                     handleSubmenuClick(subItem.id);
                   }}
-                  style={{ cursor: 'pointer', paddingLeft: '2rem' }}
+                  style={{ 
+                    cursor: 'pointer', 
+                    paddingLeft: '1.5rem',
+                    fontSize: '13px'
+                  }}
                 >
-                  <span>{subItem.title}</span>
+                  <span className="text-truncate">{subItem.title}</span>
                 </div>
               );
             })}
@@ -577,47 +439,55 @@ const Dashboard = () => {
     );
   };
 
-  // Get menu items based on user role
   const currentMenuItems = user ? (menuItems[user.role] || []) : [];
 
   if (!user) {
-    return <div>Loading...</div>;
+    return <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '100vh' }}>
+      <div className="spinner-border text-primary" role="status">
+        <span className="visually-hidden">Loading...</span>
+      </div>
+    </div>;
   }
 
   return (
-    <div className="d-flex" style={{ minHeight: '100vh' }}>
-      {/* Top Navbar */}
-     
+    <div className="dashboard-wrapper">
+      {/* Mobile Overlay */}
+      {isMobileMenuOpen && (
+        <div 
+          className="mobile-overlay d-md-none"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
       <div
-        className={`bg-white shadow-lg transition-all ${
+        className={`sidebar bg-white shadow-lg ${isMobileMenuOpen ? 'sidebar-mobile-open' : ''} ${
           isCollapsed ? 'sidebar-collapsed' : 'sidebar-expanded'
         }`}
-        style={{
-          width: isCollapsed ? '70px' : '280px',
-          transition: 'width 0.3s ease',
-          position: 'fixed',
-          height: '100vh',
-          overflowY: 'auto',
-          zIndex: 1000,
-          paddingTop: '76px' // Account for fixed navbar
-        }}
       >
         {/* Sidebar Header */}
-        <div className="d-flex align-items-center justify-content-between p-3 border-bottom">
+        <div className="sidebar-header d-flex align-items-center justify-content-between p-3 border-bottom">
           {!isCollapsed && (
-            <h6 className="mb-0 fw-bold text-primary">{user.role.toUpperCase()} Panel</h6>
+            <h6 className="mb-0 fw-bold text-primary text-truncate" style={{ fontSize: '14px' }}>
+              {user.role.toUpperCase()} Panel
+            </h6>
           )}
           <button
-            className="btn btn-outline-secondary btn-sm"
+            className="btn btn-outline-secondary btn-sm d-none d-md-block"
             onClick={() => setIsCollapsed(!isCollapsed)}
           >
-            {isCollapsed ? <Menu size={18} /> : <X size={18} />}
+            {isCollapsed ? <Menu size={16} /> : <X size={16} />}
+          </button>
+          <button
+            className="btn btn-outline-secondary btn-sm d-md-none"
+            onClick={() => setIsMobileMenuOpen(false)}
+          >
+            <X size={16} />
           </button>
         </div>
 
         {/* Menu Items */}
-        <div className="p-2">
+        <div className="sidebar-menu p-2">
           {currentMenuItems.map(item => (
             <MenuItem key={item.id} item={item} />
           ))}
@@ -625,25 +495,101 @@ const Dashboard = () => {
       </div>
 
       {/* Main Content Area */}
-      <div
-        className="flex-grow-1 bg-light"
-        style={{
-          marginLeft: isCollapsed ? '70px' : '280px',
-          transition: 'margin-left 0.3s ease',
-          padding: '20px',
-          paddingTop: '96px' // Account for fixed navbar
-        }}
-      >
-        <div className="container-fluid">
-          <div className="row">
-            <div className="col-12">
-              {renderContent()}
-            </div>
+      <div className="main-content">
+        {/* Mobile Top Bar */}
+        <div className="mobile-topbar d-md-none bg-white shadow-sm p-3 d-flex align-items-center justify-content-between">
+          <button
+            className="btn btn-outline-secondary btn-sm"
+            onClick={() => setIsMobileMenuOpen(true)}
+          >
+            <Menu size={18} />
+          </button>
+          <h6 className="mb-0 fw-bold text-primary" style={{ fontSize: '14px' }}>
+            {user.role.toUpperCase()} Panel
+          </h6>
+          <div style={{ width: '40px' }}></div>
+        </div>
+
+        {/* Content Container */}
+        <div className="content-container">
+          <div className="container-fluid p-3 p-md-4">
+            {renderContent()}
           </div>
         </div>
       </div>
 
       <style jsx>{`
+        .dashboard-wrapper {
+          display: flex;
+          min-height: 100vh;
+          position: relative;
+        }
+
+        .mobile-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 0, 0, 0.5);
+          z-index: 1040;
+        }
+
+        .sidebar {
+          position: fixed;
+          top: 0;
+          left: 0;
+          height: 100vh;
+          overflow-y: auto;
+          overflow-x: hidden;
+          transition: all 0.3s ease;
+          z-index: 1050;
+        }
+
+        .sidebar-expanded {
+          width: 280px;
+        }
+
+        .sidebar-collapsed {
+          width: 70px;
+        }
+
+        .sidebar-menu {
+          max-height: calc(100vh - 60px);
+          overflow-y: auto;
+        }
+
+        .sidebar-menu::-webkit-scrollbar {
+          width: 6px;
+        }
+
+        .sidebar-menu::-webkit-scrollbar-thumb {
+          background: #cbd5e0;
+          border-radius: 3px;
+        }
+
+        .main-content {
+          flex: 1;
+          margin-left: 280px;
+          transition: margin-left 0.3s ease;
+          min-height: 100vh;
+          background: #f8f9fa;
+        }
+
+        .sidebar-collapsed ~ .main-content {
+          margin-left: 70px;
+        }
+
+        .mobile-topbar {
+          position: sticky;
+          top: 0;
+          z-index: 1000;
+        }
+
+        .content-container {
+          padding-top: 0;
+        }
+
         .cursor-pointer {
           cursor: pointer;
         }
@@ -651,23 +597,55 @@ const Dashboard = () => {
         .hover-bg-light:hover {
           background: linear-gradient(135deg, #3fe2cd20, #ffffff70) !important;
           color: #2c5f5d !important;
-          transform: translateX(3px);
+          transform: translateX(2px);
         }
         
         .transition-all {
           transition: all 0.2s ease;
         }
+
+        .text-truncate {
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
         
-        @media (max-width: 768px) {
-          .sidebar-expanded {
-            width: 100% !important;
-            position: fixed !important;
-            z-index: 1050 !important;
+        @media (max-width: 767.98px) {
+          .sidebar {
+            transform: translateX(-100%);
+            width: 280px !important;
           }
-          
-          .sidebar-collapsed {
-            width: 0 !important;
-            overflow: hidden !important;
+
+          .sidebar-mobile-open {
+            transform: translateX(0);
+          }
+
+          .main-content {
+            margin-left: 0 !important;
+          }
+
+          .content-container {
+            padding-top: 0;
+          }
+        }
+
+        @media (min-width: 768px) and (max-width: 991.98px) {
+          .sidebar-expanded {
+            width: 240px;
+          }
+
+          .main-content {
+            margin-left: 240px;
+          }
+
+          .sidebar-collapsed ~ .main-content {
+            margin-left: 70px;
+          }
+        }
+
+        @media (max-width: 575.98px) {
+          .sidebar {
+            width: 100% !important;
           }
         }
       `}</style>

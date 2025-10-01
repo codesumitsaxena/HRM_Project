@@ -1,21 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../AuthContext';
 import {
-  User, Calendar, Clock, DollarSign, Award, TrendingUp,
-  Bell, CheckCircle, AlertCircle, BookOpen, Target, Users,
-  BarChart3, Activity, Briefcase, Building2, Star, Coffee, Zap, 
-  XCircle, ChevronLeft, ChevronRight
+  Calendar, Clock, DollarSign, Award,
+  CheckCircle, AlertCircle, Briefcase, Star, Coffee, Zap, 
+  XCircle, ChevronLeft, ChevronRight, BarChart3, Activity
 } from 'lucide-react';
 
 const EmployeeDashboard = () => {
-  const { user } = useAuth();
   const [employeeData, setEmployeeData] = useState(null);
   const [attendanceData, setAttendanceData] = useState([]);
   const [leaveData, setLeaveData] = useState(null);
   const [attendanceStats, setAttendanceStats] = useState(null);
+  const [recentLeaves, setRecentLeaves] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [currentMonth, setCurrentMonth] = useState(new Date());
+
+  const user = { userId: 1, name: 'John Doe' };
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -24,113 +24,129 @@ const EmployeeDashboard = () => {
 
     fetchAllData();
     return () => clearInterval(timer);
-  }, []);
-
-  const getEmployeeId = () => {
-    if (user?.userId) return user.userId;
-    if (user?.employeeId) return user.employeeId;
-    if (user?.User_Id) return user.User_Id;
-    
-    try {
-      const savedUser = localStorage.getItem('user');
-      if (savedUser) {
-        const parsedUser = JSON.parse(savedUser);
-        return parsedUser.userId || parsedUser.employeeId || parsedUser.User_Id;
-      }
-    } catch (error) {
-      console.error('Error parsing user:', error);
-    }
-    
-    try {
-      const token = localStorage.getItem("token");
-      if (token) {
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        return payload.employeeId || payload.userId || payload.User_Id || payload.id;
-      }
-    } catch (error) {
-      console.error('Error decoding token:', error);
-    }
-    
-    return null;
-  };
+  }, [currentMonth]);
 
   const fetchAllData = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem("token");
-      const employeeId = getEmployeeId();
 
-      if (!employeeId) {
-        console.error('No employee ID found');
-        setLoading(false);
-        return;
-      }
+      const mockEmployeeData = {
+        First_Name: 'John',
+        Last_Name: 'Doe',
+        Designation: 'Software Engineer',
+        Department_Name: 'Engineering',
+        Image_Path: 'https://via.placeholder.com/80'
+      };
+      setEmployeeData(mockEmployeeData);
 
-      // Fetch employee profile
-      try {
-        const profileRes = await fetch(`http://localhost:3000/employees/${employeeId}`, {
-          headers: {
-            "Authorization": `Bearer ${token}`,
-          },
-        });
-        if (profileRes.ok) {
-          const data = await profileRes.json();
-          setEmployeeData(data);
+      const mockAttendance = generateMockAttendance(currentMonth);
+      setAttendanceData(mockAttendance);
+
+      const stats = calculateStats(mockAttendance);
+      setAttendanceStats(stats);
+
+      const mockRecentLeaves = [
+        { 
+          id: 1, 
+          type: 'Casual Leave', 
+          startDate: new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 15), 
+          endDate: new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 17), 
+          status: 'Approved' 
+        },
+        { 
+          id: 2, 
+          type: 'Sick Leave', 
+          startDate: new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 22), 
+          endDate: new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 23), 
+          status: 'Pending' 
         }
-      } catch (error) {
-        console.error("Error fetching profile:", error);
-      }
+      ];
+      setRecentLeaves(mockRecentLeaves);
 
-      // Fetch attendance data
-      try {
-        const attendanceRes = await fetch(`http://localhost:3000/attendance/employee/${employeeId}`, {
-          headers: {
-            "Authorization": `Bearer ${token}`,
-          },
-        });
-        if (attendanceRes.ok) {
-          const data = await attendanceRes.json();
-          setAttendanceData(Array.isArray(data) ? data : []);
-        }
-      } catch (error) {
-        console.error("Error fetching attendance:", error);
-      }
+      const currentMonthLeaves = mockRecentLeaves.filter(leave => {
+        const leaveMonth = leave.startDate.getMonth();
+        return leaveMonth === currentMonth.getMonth();
+      });
 
-      // Fetch attendance statistics
-      try {
-        const statsRes = await fetch(`http://localhost:3000/attendance/stats/${employeeId}`, {
-          headers: {
-            "Authorization": `Bearer ${token}`,
-          },
-        });
-        if (statsRes.ok) {
-          const data = await statsRes.json();
-          setAttendanceStats(data);
-        }
-      } catch (error) {
-        console.error("Error fetching attendance stats:", error);
-      }
+      const leavesThisMonth = currentMonthLeaves.reduce((total, leave) => {
+        const days = Math.ceil((leave.endDate - leave.startDate) / (1000 * 60 * 60 * 24)) + 1;
+        return total + days;
+      }, 0);
 
-      // Fetch leave data
-      try {
-        const leaveRes = await fetch(`http://localhost:3000/leaves/employee/${employeeId}/stats`, {
-          headers: {
-            "Authorization": `Bearer ${token}`,
-          },
-        });
-        if (leaveRes.ok) {
-          const data = await leaveRes.json();
-          setLeaveData(data);
-        }
-      } catch (error) {
-        console.error("Error fetching leave data:", error);
-      }
+      const pendingThisMonth = currentMonthLeaves.filter(l => l.status === 'Pending').length;
+
+      const mockLeaveData = {
+        totalLeaves: 20,
+        leavesTaken: leavesThisMonth,
+        leavesAbsent: stats.totalAbsent,
+        pendingApproval: pendingThisMonth,
+        lossOfPay: 0
+      };
+      setLeaveData(mockLeaveData);
 
     } catch (error) {
       console.error("Error fetching data:", error);
     } finally {
       setLoading(false);
     }
+  };
+
+  const generateMockAttendance = (month) => {
+    const attendance = [];
+    const year = month.getFullYear();
+    const monthIndex = month.getMonth();
+    const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+    const today = new Date();
+    
+    const festivals = {
+      2: 'Gandhi Jayanti',
+      12: 'Dussehra',
+      20: 'Diwali',
+      21: 'Diwali',
+      22: 'Diwali'
+    };
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      const date = new Date(year, monthIndex, day);
+      const dayOfWeek = date.getDay();
+      
+      let status = null;
+      
+      if (year === today.getFullYear() && monthIndex === today.getMonth() && day > today.getDate()) {
+        status = null;
+      } else if (festivals[day]) {
+        status = 'Holiday';
+      } else if (dayOfWeek === 0 || dayOfWeek === 6) {
+        status = 'Holiday';
+      } else if (Math.random() > 0.95) {
+        status = 'Absent';
+      } else if (Math.random() > 0.9) {
+        status = 'Leave';
+      } else {
+        status = 'Present';
+      }
+
+      attendance.push({
+        date: date.toISOString().split('T')[0],
+        status: status,
+        festivalName: festivals[day] || null
+      });
+    }
+    return attendance;
+  };
+
+  const calculateStats = (attendance) => {
+    const present = attendance.filter(a => a.status === 'Present').length;
+    const absent = attendance.filter(a => a.status === 'Absent').length;
+    const leave = attendance.filter(a => a.status === 'Leave').length;
+    const workingDays = attendance.filter(a => a.status && a.status !== 'Holiday').length;
+
+    return {
+      totalPresent: present,
+      totalAbsent: absent,
+      totalLeaves: leave,
+      totalWorkingDays: workingDays
+    };
   };
 
   const getDaysInMonth = (date) => {
@@ -144,33 +160,17 @@ const EmployeeDashboard = () => {
     return { daysInMonth, startingDayOfWeek };
   };
 
-  const getAttendanceStatus = (date) => {
+  const getAttendanceForDate = (date) => {
     const dateStr = date.toISOString().split('T')[0];
-    const record = attendanceData.find(a => {
-      const recordDate = new Date(a.date || a.Date || a.Attendance_Date).toISOString().split('T')[0];
-      return recordDate === dateStr;
-    });
-    
-    if (!record) return null;
-    
-    // Check different status field names
-    const status = record.status || record.Status || record.Attendance_Status;
-    
-    // Normalize status values
-    if (status === 'Present' || status === 'present' || status === 'P') return 'present';
-    if (status === 'Absent' || status === 'absent' || status === 'A') return 'absent';
-    if (status === 'Leave' || status === 'leave' || status === 'L') return 'leave';
-    if (status === 'Holiday' || status === 'holiday' || status === 'H') return 'holiday';
-    
-    return status?.toLowerCase();
+    return attendanceData.find(a => a.date === dateStr);
   };
 
   const getStatusColor = (status) => {
     switch(status) {
-      case 'present': return '#28a745';
-      case 'absent': return '#dc3545';
-      case 'leave': return '#ffc107';
-      case 'holiday': return '#6c757d';
+      case 'Present': return '#28a745';
+      case 'Absent': return '#dc3545';
+      case 'Leave': return '#ffc107';
+      case 'Holiday': return '#6c757d';
       default: return 'transparent';
     }
   };
@@ -189,16 +189,21 @@ const EmployeeDashboard = () => {
     let days = [];
 
     for (let i = 0; i < startingDayOfWeek; i++) {
-      days.push(<div key={`empty-${i}`} className="text-center p-1"></div>);
+      days.push(
+        <div key={`empty-${i}`} className="col text-center p-1">
+          <div style={{ height: '32px' }}></div>
+        </div>
+      );
     }
 
     for (let day = 1; day <= daysInMonth; day++) {
       const date = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
-      const status = getAttendanceStatus(date);
+      const record = getAttendanceForDate(date);
+      const status = record?.status;
       const isToday = date.toDateString() === new Date().toDateString();
 
       days.push(
-        <div key={day} className="text-center p-1" style={{ position: 'relative' }}>
+        <div key={day} className="col text-center p-1">
           <div
             className={`rounded-circle d-flex align-items-center justify-content-center mx-auto ${isToday ? 'border border-2 border-primary' : ''}`}
             style={{
@@ -206,12 +211,27 @@ const EmployeeDashboard = () => {
               height: '32px',
               backgroundColor: status ? getStatusColor(status) : '#f8f9fa',
               color: status ? 'white' : '#6c757d',
-              fontSize: '0.75rem',
-              fontWeight: isToday ? 'bold' : 'normal'
+              fontSize: '0.7rem',
+              fontWeight: isToday ? 'bold' : 'normal',
+              cursor: record?.festivalName ? 'pointer' : 'default'
             }}
+            title={record?.festivalName || status || ''}
           >
             {day}
           </div>
+          {record?.festivalName && (
+            <div style={{ 
+              fontSize: '0.45rem', 
+              color: '#6c757d',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              maxWidth: '32px',
+              margin: '0 auto'
+            }}>
+              {record.festivalName.substring(0, 6)}
+            </div>
+          )}
         </div>
       );
 
@@ -222,23 +242,28 @@ const EmployeeDashboard = () => {
     }
 
     if (days.length > 0) {
+      while (days.length < 7) {
+        days.push(
+          <div key={`empty-end-${days.length}`} className="col text-center p-1">
+            <div style={{ height: '32px' }}></div>
+          </div>
+        );
+      }
       weeks.push(<div key={`week-${weeks.length}`} className="row g-1 mb-1">{days}</div>);
     }
 
     return weeks;
   };
 
-  // Calculate dynamic leave stats
-  const totalLeaves = leaveData?.totalLeaves || leaveData?.total_leaves || 10;
-  const leavesTaken = leaveData?.leavesTaken || leaveData?.leaves_taken || 0;
-  const leavesAbsent = leaveData?.leavesAbsent || leaveData?.leaves_absent || 0;
-  const pendingApproval = leaveData?.pendingApproval || leaveData?.pending_approval || 0;
-  const workingDays = attendanceStats?.totalWorkingDays || attendanceStats?.total_working_days || 0;
-  const lossOfPay = leaveData?.lossOfPay || leaveData?.loss_of_pay || 0;
+  const totalLeaves = leaveData?.totalLeaves || 20;
+  const leavesTaken = leaveData?.leavesTaken || 0;
+  const leavesAbsent = leaveData?.leavesAbsent || 0;
+  const pendingApproval = leaveData?.pendingApproval || 0;
+  const workingDays = attendanceStats?.totalWorkingDays || 0;
+  const lossOfPay = leaveData?.lossOfPay || 0;
 
-  // Calculate attendance percentage
-  const totalPresent = attendanceStats?.totalPresent || attendanceStats?.total_present || 0;
-  const totalAbsent = attendanceStats?.totalAbsent || attendanceStats?.total_absent || 0;
+  const totalPresent = attendanceStats?.totalPresent || 0;
+  const totalAbsent = attendanceStats?.totalAbsent || 0;
   const attendancePercentage = workingDays > 0 
     ? Math.round((totalPresent / workingDays) * 100) 
     : 0;
@@ -252,7 +277,7 @@ const EmployeeDashboard = () => {
       bgColor: "rgba(23, 162, 184, 0.1)"
     },
     {
-      title: "Leaves Taken",
+      title: "Leaves This Month",
       value: leavesTaken,
       icon: CheckCircle,
       color: "#28a745",
@@ -266,7 +291,7 @@ const EmployeeDashboard = () => {
       bgColor: "rgba(220, 53, 69, 0.1)"
     },
     {
-      title: "Pending Approval",
+      title: "Pending",
       value: pendingApproval,
       icon: Clock,
       color: "#ffc107",
@@ -288,29 +313,53 @@ const EmployeeDashboard = () => {
     }
   ];
 
-  const recentActivities = [
-    {
-      id: 1,
-      title: "Attendance Marked",
-      time: "Today",
-      type: "success",
-      icon: CheckCircle
-    },
-    {
-      id: 2,
-      title: "Leave Request Submitted",
-      time: "2 days ago",
-      type: "info",
-      icon: Calendar
-    },
-    {
-      id: 3,
-      title: "Performance Review Due",
-      time: "5 days",
-      type: "warning",
-      icon: AlertCircle
+  const getRecentActivities = () => {
+    const activities = [];
+    
+    const todayRecord = getAttendanceForDate(new Date());
+    if (todayRecord?.status === 'Present') {
+      activities.push({
+        id: 'att-today',
+        title: "Attendance Marked",
+        time: "Today",
+        type: "success",
+        icon: CheckCircle
+      });
     }
-  ];
+
+    const currentMonthLeaves = recentLeaves.filter(leave => 
+      leave.startDate.getMonth() === currentMonth.getMonth()
+    );
+
+    currentMonthLeaves.forEach((leave, index) => {
+      const days = Math.ceil((leave.endDate - leave.startDate) / (1000 * 60 * 60 * 24)) + 1;
+      activities.push({
+        id: `leave-${index}`,
+        title: `${leave.type} ${leave.status}`,
+        time: `${leave.startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${leave.endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} (${days} days)`,
+        type: leave.status === 'Approved' ? 'success' : 'warning',
+        icon: leave.status === 'Approved' ? CheckCircle : Clock
+      });
+    });
+
+    const upcomingHolidays = attendanceData.filter(a => 
+      a.status === 'Holiday' && 
+      a.festivalName && 
+      new Date(a.date) > new Date()
+    ).slice(0, 2);
+
+    upcomingHolidays.forEach((holiday, index) => {
+      activities.push({
+        id: `holiday-${index}`,
+        title: holiday.festivalName,
+        time: new Date(holiday.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        type: "info",
+        icon: Star
+      });
+    });
+
+    return activities.slice(0, 5);
+  };
 
   if (loading) {
     return (
@@ -330,7 +379,6 @@ const EmployeeDashboard = () => {
         minHeight: "100vh"
       }}
     >
-      {/* Header Section */}
       <div className="row mb-3 mb-md-4">
         <div className="col-12">
           <div 
@@ -359,7 +407,7 @@ const EmployeeDashboard = () => {
                       <p className="mb-2 opacity-90 small">
                         {employeeData?.Designation || 'Employee'} • {employeeData?.Department_Name || 'Department'}
                       </p>
-                      <div className="d-flex align-items-center justify-content-center justify-content-md-start">
+                      <div className="d-flex align-items-center justify-content-center justify-content-md-start flex-wrap">
                         <Coffee size={14} className="me-2" />
                         <span style={{ fontSize: '0.85rem' }}>
                           {currentTime.toLocaleDateString()} • {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -383,7 +431,6 @@ const EmployeeDashboard = () => {
         </div>
       </div>
 
-      {/* Leave Stats Cards */}
       <div className="row mb-3 mb-md-4 g-2 g-md-3">
         {leaveStats.map((stat, index) => {
           const IconComponent = stat.icon;
@@ -408,7 +455,7 @@ const EmployeeDashboard = () => {
                     <IconComponent size={20} style={{ color: stat.color }} />
                   </div>
                   <div className="fs-4 fw-bold text-dark mb-1">{stat.value}</div>
-                  <div className="text-muted" style={{ fontSize: '0.75rem' }}>{stat.title}</div>
+                  <div className="text-muted" style={{ fontSize: '0.7rem' }}>{stat.title}</div>
                 </div>
               </div>
             </div>
@@ -417,7 +464,6 @@ const EmployeeDashboard = () => {
       </div>
 
       <div className="row g-2 g-md-3">
-        {/* Attendance Calendar */}
         <div className="col-lg-8">
           <div 
             className="card border-0 shadow-sm mb-3"
@@ -427,7 +473,7 @@ const EmployeeDashboard = () => {
             }}
           >
             <div className="card-body p-3 p-md-4">
-              <div className="d-flex justify-content-between align-items-center mb-3">
+              <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
                 <h5 className="card-title text-primary mb-0 d-flex align-items-center">
                   <Calendar size={20} className="me-2" />
                   Attendance Calendar
@@ -453,9 +499,9 @@ const EmployeeDashboard = () => {
                 </div>
               </div>
 
-              <div className="row g-1 mb-2">
-                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                  <div key={day} className="col text-center">
+              <div className="row g-0 mb-2">
+                {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, index) => (
+                  <div key={index} className="col text-center">
                     <small className="fw-bold text-muted">{day}</small>
                   </div>
                 ))}
@@ -492,7 +538,6 @@ const EmployeeDashboard = () => {
             </div>
           </div>
 
-          {/* Quick Actions */}
           <div 
             className="card border-0 shadow-sm"
             style={{
@@ -567,9 +612,7 @@ const EmployeeDashboard = () => {
           </div>
         </div>
 
-        {/* Sidebar */}
         <div className="col-lg-4">
-          {/* Recent Activities */}
           <div 
             className="card border-0 shadow-sm mb-3"
             style={{
@@ -583,7 +626,7 @@ const EmployeeDashboard = () => {
                 Recent Activities
               </h5>
               <div className="timeline">
-                {recentActivities.map(activity => {
+                {getRecentActivities().map(activity => {
                   const IconComponent = activity.icon;
                   return (
                     <div key={activity.id} className="d-flex mb-3">
@@ -617,7 +660,6 @@ const EmployeeDashboard = () => {
             </div>
           </div>
 
-          {/* Attendance Ratio */}
           <div 
             className="card border-0 shadow-sm"
             style={{

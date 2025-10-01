@@ -15,6 +15,7 @@ import EmployeeProfile from "./Components/Employees/EnployeeProfile";
 import EmployeeDashboard from "./Components/Employees/EmployeeDashboard";
 import AdminDashboard from './Components/Admin/AdminDashboard';
 import AdminLeaveManagement from './Components/Admin/LeaveManagmentAdmin'; // Fixed import
+import AttendanceManagement from './Components/HR/EmployeeAttendance'
 
 // CSS imports
 import "./App.css";
@@ -66,6 +67,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/attendance/daily"
+            element={
+              <ProtectedRoute>
+                <AttendanceManagement />
               </ProtectedRoute>
             }
           />
